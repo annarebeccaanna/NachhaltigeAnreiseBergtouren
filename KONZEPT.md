@@ -1,7 +1,7 @@
 # Technische Konzeption: Nachhaltige Anreise zu Bergtouren
 
 **Arbeitstitel:** ÖV-Erreichbarkeitskarte für Bergtouren im Alpenraum
-**Stand:** 2026-07-02 · Entwurf v1.2 (Importer-Strategie & Mehrsprachigkeit ergänzt; alle Grundsatzfragen entschieden)
+**Stand:** 2026-07-02 · Entwurf v1.3 (Sicherheitskonzept ergänzt, § 11)
 
 ---
 
@@ -396,6 +396,7 @@ Französisch, Italienisch, Slowenisch – plus Englisch als Fallback.
 | Transitous-Rate-Limits | mittel | Cache aggressiv, früh eigene MOTIS-Instanz planen |
 | Performance der Flächenberechnung | mittel | Vorberechnung der Zubringer-Isochronen (§ 4.2) |
 | Tourdauer-Schätzung ungenau (Stufe 2) | niedrig | Puffer + konservative Formel, als Schätzung kennzeichnen |
+| API-Missbrauch / Kostenexplosion („Denial of Wallet") | mittel | Rate Limiting, Cache-first, Spend-Limits, Validierung – vollständiges Sicherheitskonzept in § 11 |
 
 ## 10. Entscheidungsprotokoll (ursprünglich offene Fragen)
 
@@ -421,3 +422,117 @@ Alle Grundsatzfragen sind entschieden (Stand 2026-07-02):
    syntaktisch näher an HTML/CSS/JS, hat aber deutlich weniger Lernmaterial
    und Community-Beispiele – bei „erstes Framework überhaupt" wiegt das
    schwerer als die etwas steilere React-Lernkurve.
+
+---
+
+## 11. Sicherheitskonzept
+
+### 11.1 Schutzziele und Bedrohungsmodell
+
+Die Anwendung ist ein öffentliches, **rein lesendes** Kartenwerkzeug ohne
+Nutzerkonten (MVP). Die Fachdaten selbst (Touren, Fahrpläne) sind öffentlich –
+vertrauliche *Inhalte* gibt es nicht. Schützenswert sind vier Dinge:
+
+1. **Geheimnisse:** API-Schlüssel (Outdooractive, Supabase-Service-Key,
+   Upstash-Token) dürfen nie den Server verlassen.
+2. **Ressourcen und Kosten:** Rechenzeit, Vercel-/Supabase-Kontingente und die
+   Fair-Use-Grenzen der Transitous-API („Denial of Wallet" statt klassischem
+   Datendiebstahl ist hier das realistische Angriffsszenario).
+3. **Datenintegrität:** Schreiben dürfen ausschließlich die eigenen
+   Import-Jobs – niemals die öffentliche API.
+4. **Verfügbarkeit:** Schutz gegen Spam, Scraping und DoS-artige Nutzung.
+
+### 11.2 Grundsatz: alles Sensible liegt im Backend
+
+- Der Browser erhält ausschließlich anonyme, öffentliche Inhalte (GeoJSON,
+  Kartenkacheln, UI). Sämtliche Schlüssel leben in Vercel-Env-Variablen bzw.
+  GitHub-Actions-Secrets – nie im Repository, nie im Client-Bundle.
+- **Next.js-Fallstrick:** Env-Variablen mit Präfix `NEXT_PUBLIC_` werden beim
+  Build **ins Browser-Bundle kopiert**. Regel: kein Schlüssel bekommt jemals
+  dieses Präfix; ein CI-Check (grep im Build) erzwingt das.
+- **Supabase-Fallstrick:** Supabase hat zwei Schlüssel – den öffentlichen
+  `anon`-Key (für direkten Browserzugriff gedacht) und den `service_role`-Key
+  (Vollzugriff). Architekturentscheidung: **kein direkter
+  Datenbankzugriff aus dem Browser.** Nur Route Handlers und GitHub Actions
+  sprechen die DB an (serverseitig, `service_role`). Zusätzlich – Defense in
+  Depth – wird **Row Level Security auf allen Tabellen aktiviert mit
+  Deny-all-Policies**: Selbst ein versehentlich veröffentlichter `anon`-Key
+  gäbe dann keinerlei Zugriff.
+- **Outdooractive-Keys** existieren nur im Import-Job (GitHub-Action-Secret);
+  keine Client-Anfrage enthält sie.
+- **Basemap ohne Schlüssel:** bevorzugt OpenFreeMap, dann liegt gar kein
+  Karten-Key im Client. Falls später MapTiler-Terrain gewünscht: dieser Key
+  ist konzeptbedingt öffentlich sichtbar und wird über Domain-Bindung im
+  MapTiler-Dashboard plus Kontingent begrenzt – mehr ist bei Client-Keys
+  prinzipiell nicht möglich.
+
+### 11.3 API-Zugriffe: Limitierung und Missbrauchsschutz
+
+- **Rate Limiting pro IP** auf allen `/api/*`-Routen mit `@upstash/ratelimit`
+  (nutzt das ohnehin vorhandene Upstash Redis; Sliding Window). Richtwerte:
+  10 Isochronen-Anfragen/min, 60 Tour-Abfragen/min; darüber HTTP 429 mit
+  `Retry-After`.
+- **Cache vor Rechnung:** identische Anfragen (Start + Budgets + Zeitfenster)
+  treffen den Cache. Spam mit identischen Parametern erzeugt so fast keine
+  Last und erreicht Transitous nie.
+- **Upstream-Schutz:** Nur das Backend spricht Transitous an (nie der
+  Browser), mit serverseitigem Concurrency-Deckel (Warteschlange, max. N
+  parallele Anfragen). Die App muss sich als fairer Nutzer der Community-API
+  verhalten – das ist Sicherheits- *und* Nachbarschaftspflicht.
+- **Vercel Firewall/WAF:** DDoS-Mitigation ist bei Vercel inklusive;
+  Bot-Challenge-Regeln können bei beobachtetem Missbrauch zugeschaltet werden.
+- **Kostenbremsen:** Vercel Spend Management (hartes Limit + Abschaltung),
+  Supabase-Kontingent-Alerts. Damit ist der Schaden eines Angriffs auf die
+  Kosten gedeckelt, nicht nur verlangsamt.
+- **CORS bewusst geschlossen:** Die API sendet keine CORS-Header – fremde
+  Websites können sie nicht aus dem Browser einbinden. (Server-zu-Server-
+  Scraping öffentlicher GeoJSON-Antworten lässt sich prinzipiell nicht
+  verhindern; Rate Limit + Cache machen es wirkungslos billig.)
+
+### 11.4 Eingabevalidierung
+
+- Alle Query-Parameter werden serverseitig mit **zod** validiert, bevor
+  irgendetwas passiert: Koordinaten müssen in der Alpen-Bounding-Box liegen,
+  Budgets in festen Grenzen (ÖV ≤ 6 h, Zubringer ≤ 90 min), Modus als Enum,
+  Zeitstempel plausibel. Ungültige Eingaben → HTTP 400, ohne Upstream-Call,
+  ohne DB-Zugriff.
+- Datenbankzugriffe ausschließlich parametrisiert (supabase-js / RPC), nie
+  per String-Verkettung → kein SQL-Injection-Vektor. Die PostGIS-RPC-
+  Funktionen sind read-only und laufen mit minimalen Rechten.
+- **Importierte Fremddaten gelten als untrusted:** OSM-/Outdooractive-Texte
+  werden beim Import längenbegrenzt und bereinigt und im Frontend nie als
+  HTML interpretiert (React escaped per Default; `dangerouslySetInnerHTML`
+  ist für Quelltexte tabu) → kein Stored XSS über Tourbeschreibungen.
+
+### 11.5 Schreibzugriffe und Lieferkette
+
+- Die öffentliche API ist **strikt read-only**; schreiben können nur die
+  Import-Jobs (GitHub Actions mit Secrets).
+- GitHub-Härtung: Branch Protection auf `main`, Secret Scanning inkl. Push
+  Protection, Dependabot für Dependency-Updates; Actions werden auf
+  Commit-SHA gepinnt; `GITHUB_TOKEN` mit minimalen Rechten
+  (`contents: read`).
+- Vercel-Deploys nur über die Git-Integration; Production- und
+  Preview-Umgebung haben getrennte Secrets (Preview-Deploys von PRs erhalten
+  keine produktiven Schlüssel).
+
+### 11.6 Transport und Header
+
+- HTTPS erzwungen (Vercel), HSTS aktiv.
+- Security-Header via `next.config`: Content-Security-Policy (nur eigene
+  Origin plus Tile-/Schriftquellen), `X-Content-Type-Options: nosniff`,
+  `Referrer-Policy`, `frame-ancestors 'none'` (kein Clickjacking).
+
+### 11.7 Datenschutz (DSGVO)
+
+- Das MVP hat keine Konten und speichert keine personenbezogenen Daten.
+  Startpunkt-Koordinaten werden nicht mit IP-Adressen verknüpft gespeichert;
+  Cache-Schlüssel enthalten keine IP.
+- Sprach-Automatik (§ 7.1): `Accept-Language`- und Geo-Header werden nur zur
+  Laufzeit gelesen, nicht persistiert. Das Sprach-Cookie ist rein funktional
+  (keine Einwilligungspflicht wie bei Tracking).
+- Rate Limiting speichert IP-bezogene Zähler mit kurzer TTL (Minuten) –
+  technisch erforderlich, berechtigtes Interesse; wird in der
+  Datenschutzerklärung genannt.
+- Kein Tracking/Analytics im MVP; Impressum + Datenschutzerklärung als
+  statische Seiten von Beginn an.
