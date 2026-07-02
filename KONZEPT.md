@@ -1,7 +1,7 @@
 # Technische Konzeption: Nachhaltige Anreise zu Bergtouren
 
 **Arbeitstitel:** ÖV-Erreichbarkeitskarte für Bergtouren im Alpenraum
-**Stand:** 2026-07-02 · Entwurf v1
+**Stand:** 2026-07-02 · Entwurf v1.1 (Stack konkretisiert: Vercel + Supabase + GitHub)
 
 ---
 
@@ -166,8 +166,8 @@ Photon mit Alpenraum-Bounding-Box.
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│  Frontend (SPA)                                            │
-│  MapLibre GL JS + Sidebar (Svelte oder React)              │
+│  Frontend: Next.js (React) auf Vercel                      │
+│  MapLibre GL JS + Sidebar                                  │
 │  – Suchfeld (Photon), Slider ÖV-Budget, Modus Fuß/Rad,     │
 │    Slider Zubringer-Budget, (Stufe 2: Startzeit)           │
 │  – Layer: Isochronen-Polygon (GeoJSON), Tour-Pins          │
@@ -175,22 +175,30 @@ Photon mit Alpenraum-Bounding-Box.
 └──────────────┬─────────────────────────────────────────────┘
                │ REST/JSON
 ┌──────────────▼─────────────────────────────────────────────┐
-│  Backend-API (Python/FastAPI empfohlen – GeoPandas/Shapely │
-│  für Geometrie-Verarbeitung)                               │
-│  GET /isochrone   → Erreichbarkeitsfläche als GeoJSON      │
-│  GET /tours       → Touren innerhalb einer Fläche/BBox     │
-│  GET /tours/{id}  → Tourdetails                            │
-│  (Stufe 2) GET /tours/{id}/itinerary → Hin- & Rückreise    │
-│  + Caching (Redis): Schlüssel = Start+Budgets+Zeitfenster  │
+│  Backend: Next.js Route Handlers (Vercel Functions, TS)    │
+│  GET /api/isochrone   → Erreichbarkeitsfläche als GeoJSON  │
+│  GET /api/tours       → Touren innerhalb Fläche/BBox       │
+│  GET /api/tours/{id}  → Tourdetails                        │
+│  (Stufe 2) /api/tours/{id}/itinerary → Hin- & Rückreise    │
+│  – schwere Geometrie (Union) läuft nicht in der Function,  │
+│    sondern als SQL/RPC in Supabase-Postgres (§ 4.4)        │
+│  + Caching: Vercel Data Cache / Upstash Redis              │
 └───────┬──────────────────────────┬─────────────────────────┘
         │                          │
 ┌───────▼────────────┐   ┌─────────▼──────────────┐
-│ Routing            │   │ PostgreSQL + PostGIS   │
-│ Transitous/MOTIS   │   │ Touren, Haltestellen-  │
-│ (One-to-Many, ÖV + │   │ Cache, räumliche       │
-│ First/Last-Mile);  │   │ Indizes (GIST)         │
-│ optional Valhalla  │   │                        │
-└────────────────────┘   └────────────────────────┘
+│ Routing (extern)   │   │ Supabase               │
+│ Transitous/MOTIS   │   │ (PostgreSQL + PostGIS) │
+│ (One-to-Many, ÖV + │   │ Touren, vorberechnete  │
+│ First/Last-Mile);  │   │ Zubringer-Isochronen,  │
+│ optional Valhalla  │   │ GIST-Indizes, RPC für  │
+└────────────────────┘   │ ST_Union/ST_Intersects │
+        ▲                └─────────▲──────────────┘
+        │                          │
+┌───────┴──────────────────────────┴─────────────────────────┐
+│  GitHub: Repo, CI/CD (Vercel-Integration, Preview-Deploys) │
+│  GitHub Actions als Batch-Jobs (Cron): OSM-Tourimport,     │
+│  Zubringer-Isochronen-Vorberechnung → schreiben in Supabase│
+└────────────────────────────────────────────────────────────┘
 ```
 
 ### 4.1 Ablauf einer Anfrage (MVP)
@@ -229,6 +237,44 @@ sinnvoll, die Fläche bewusst als „ungefähr erreichbar (Abfahrt Sa ~7:00)" zu
 kommunizieren und die **exakte Verbindung erst beim Klick auf eine Tour** zu
 berechnen (ein einzelner Routing-Call, billig und präzise). Das trennt sauber:
 Fläche = schnell & ungefähr, Tourdetail = exakt.
+
+### 4.4 Passung des Stacks Vercel + Supabase + GitHub (Selbst-Check)
+
+**Was gut passt:**
+
+- **Supabase = gemanagtes PostgreSQL mit PostGIS-Extension.** Das ist exakt die in
+  diesem Konzept vorgesehene Geodatenbank – inklusive `ST_Union`,
+  `ST_Intersects`, GIST-Indizes. Die rechenintensive Flächen-Vereinigung (§ 4.2)
+  wird als Postgres-Funktion (Supabase RPC) implementiert; die Vercel Function
+  orchestriert nur noch (Routing-API aufrufen, RPC aufrufen, GeoJSON
+  durchreichen) und bleibt damit weit unter den Serverless-Zeitlimits.
+- **Vercel** deckt Frontend + API in einem Repo/Deploy ab; Preview-Deploys pro
+  Pull Request beschleunigen die Iteration spürbar.
+- **GitHub Actions ersetzt den Batch-Server:** OSM-Tourimport und die
+  Isochronen-Vorberechnung (§ 4.2) sind periodische, lang laufende Jobs – als
+  Scheduled Workflows laufen sie kostenlos und schreiben direkt nach Supabase.
+  Damit braucht das MVP **keinen einzigen selbst betriebenen Server**.
+
+**Worauf zu achten ist:**
+
+- **Serverless-Zeitlimits:** Nichts Langlaufendes in den Request-Pfad legen.
+  Alles > ein paar Sekunden gehört in GitHub Actions (Batch) oder in die
+  Datenbank (RPC). Das erzwingt die ohnehin geplante Vorberechnung – der
+  Constraint wirkt hier als gesunde Architektur-Leitplanke.
+- **Supabase Free Tier (500 MB):** Touren (vereinfachte Geometrien) passen
+  locker; die vorberechneten Zubringer-Isochronen für viele Tausend Haltestellen
+  können das Limit sprengen. Gegenmittel: nur tour-relevante Haltestellen
+  (§ 4.2, Punkt 1), Geometrien vereinfachen, ggf. Supabase Pro (~25 US$/Monat).
+- **Grenze des Stacks:** Eine spätere **eigene MOTIS-/Valhalla-Instanz** (§ 3.1,
+  Stufe „Produktivbetrieb") ist ein dauerhaft laufender, RAM-hungriger Prozess –
+  das kann weder Vercel noch Supabase. Dafür braucht es dann einen
+  Container-Host (z. B. Hetzner/Fly.io). Fürs MVP irrelevant, da Transitous als
+  externe API genutzt wird; es bleibt als einziger späterer Infrastruktur-Baustein
+  außerhalb des Stacks.
+- **Sprachwechsel Backend:** Mit Vercel wird TypeScript durchgängig
+  (statt Python/FastAPI). Fachlich unkritisch, weil die Geo-Schwerarbeit in
+  PostGIS stattfindet und nicht in Application-Code; Turf.js reicht für leichte
+  Client-/Server-Geometrie.
 
 ---
 
@@ -272,14 +318,15 @@ befüllt werden (deshalb stehen sie schon im MVP-Datenmodell).
 |---|---|---|
 | Karte | MapLibre GL JS | Open Source, Vektor-Tiles, performant |
 | Basemap | OpenFreeMap oder Versatiles; Gelände: MapTiler Terrain (frei limitiert) | kostenfrei startbar |
-| Frontend | Svelte(Kit) oder React + Vite | Geschmackssache; schlanke SPA reicht |
-| Backend | Python 3.12 + FastAPI | Geo-Ökosystem (Shapely, GeoPandas), async |
-| DB | PostgreSQL 16 + PostGIS | räumliche Queries, Standard |
-| Cache | Redis | Isochronen- & Routing-Cache |
-| ÖV-Routing | Transitous-API → später eigene MOTIS-Instanz | s. § 3.1 |
+| Frontend | **Next.js (React)** auf Vercel | nahtloses Vercel-Deployment, Preview-Deploys pro PR |
+| Backend | Next.js Route Handlers (TypeScript, Vercel Functions) | ein Repo, ein Deploy; Geo-Schwerarbeit liegt in PostGIS (§ 4.4) |
+| DB | **Supabase** (PostgreSQL + PostGIS-Extension) | gemanagtes Postgres mit vollem PostGIS; RPC für ST_Union; Auth/RLS später gratis dabei |
+| Cache | Vercel Data Cache + Upstash Redis (Vercel-Marketplace) | serverless-kompatibel, kein eigener Redis-Betrieb |
+| Batch/Import | **GitHub Actions** (Scheduled Workflows) | OSM-Import & Isochronen-Vorberechnung ohne eigenen Server |
+| ÖV-Routing | Transitous-API → später eigene MOTIS-Instanz | s. § 3.1; MOTIS braucht dann separaten Container-Host (§ 4.4) |
 | Fuß/Rad | MOTIS Street-Routing, ggf. Valhalla | s. § 3.2 |
 | Geocoding | Photon | frei, OSM |
-| Deployment | Docker Compose auf einem VPS | MVP-tauglich, später skalierbar |
+| Deployment | Vercel + Supabase (Free Tier fürs MVP), CI/CD via GitHub | Null-Ops-Start; einzige spätere Ausnahme: Routing-Host |
 
 ## 8. MVP-Roadmap
 
@@ -291,8 +338,8 @@ befüllt werden (deshalb stehen sie schon im MVP-Datenmodell).
    für den ganzen Alpenraum, Tour-Popup, Abfahrtszeit-Voreinstellung.
 3. **M3 – Ausbaustufe 2:** Startzeit-Eingabe, Rückreise-Check on-demand pro Tour,
    Ampel-Anzeige, „letzte Rückfahrt".
-4. **M4 – Ausbaustufe 3 + Betrieb:** Filter, eigene MOTIS-Instanz, Monitoring,
-   ggf. Partner-Tourdaten.
+4. **M4 – Ausbaustufe 3 + Betrieb:** Filter, eigene MOTIS-Instanz (separater
+   Container-Host, § 4.4), Monitoring, ggf. Partner-Tourdaten.
 
 ## 9. Risiken
 
@@ -310,10 +357,12 @@ befüllt werden (deshalb stehen sie schon im MVP-Datenmodell).
    bereits einen Kontakt/eine Lizenz zu einer Plattform (Outdooractive o. ä.)?
 2. **Budget-Semantik:** getrennte Budgets für ÖV und Zubringer (Variante A,
    empfohlen) oder ein Gesamtbudget (Variante B)?
-3. **Betrieb:** Gibt es ein Hosting-Budget (VPS ~10–40 €/Monat für MVP; eigene
-   MOTIS-Instanz später ~50–100 €/Monat), oder soll alles auf Gratis-Diensten
-   laufen (dann strengere Limits)?
+3. ~~**Betrieb:** Hosting-Budget?~~ **✅ Entschieden (2026-07-02):** Vercel +
+   Supabase + GitHub (Free Tier fürs MVP, § 4.4). Kosten entstehen erst später:
+   ggf. Supabase Pro (~25 US$/Monat) und – erst beim Wechsel weg von der
+   Transitous-API – ein eigener Routing-Host (~50–100 €/Monat).
 4. **Sprachen:** Nur Deutsch, oder mehrsprachig (bei „alle Alpenländer" liegt
    DE/EN/FR/IT/SL nahe)? Beeinflusst v. a. das Frontend, früh entscheidbar, spät
    teuer nachzurüsten.
-5. **Frontend-Framework:** Präferenz für Svelte oder React?
+5. ~~**Frontend-Framework:** Svelte oder React?~~ **✅ Entschieden (2026-07-02):**
+   Next.js/React – folgt aus der Vercel-Präferenz.
