@@ -1,7 +1,7 @@
 # Technische Konzeption: Nachhaltige Anreise zu Bergtouren
 
 **Arbeitstitel:** ÖV-Erreichbarkeitskarte für Bergtouren im Alpenraum
-**Stand:** 2026-07-02 · Entwurf v1.1 (Stack konkretisiert: Vercel + Supabase + GitHub)
+**Stand:** 2026-07-02 · Entwurf v1.2 (Importer-Strategie & Mehrsprachigkeit ergänzt; alle Grundsatzfragen entschieden)
 
 ---
 
@@ -72,6 +72,8 @@ entsteht in zwei Schritten:
 Die Beschreibung („wie weit mit dem Nahverkehr **sowie** wie weit zu Fuß/Rad") klingt
 nach Variante A – so wird sie hier konzipiert.
 
+**✅ Entschieden (2026-07-02): Variante A – getrennte Budgets.**
+
 ---
 
 ## 3. Datenquellen
@@ -139,6 +141,26 @@ Rundtour-Erkennung Start≈Ende). Parallel Gespräch mit Outdooractive (haben ei
 Förderprogramm für nachhaltige Projekte) und/oder Zuugle. Zusätzlich von Anfang an
 ein **Import-Format** definieren, damit später beliebige Quellen (GPX + Metadaten)
 eingespielt werden können – das entkoppelt das Produkt von einer einzelnen Plattform.
+
+**✅ Entschieden (2026-07-02): Zwei Importer von Anfang an.** Beide mappen auf
+dasselbe Tour-Schema (unten); die restliche Anwendung kennt keine Quellen – ein
+Quellenwechsel ist damit ein Austauschmodul, kein Umbau.
+
+1. **OSM-Importer** (Overpass bzw. Planet-Extract): rechtlich sauber (ODbL),
+   dauerhaft nutzbar, deckt den öffentlichen Livegang ab. Läuft als
+   GitHub-Action (Cron) und schreibt nach Supabase.
+2. **Outdooractive-Importer** (Data API mit den kostenlosen Test-Keys): liefert
+   bessere redaktionelle Metadaten (Schwierigkeit, geprüfte Dauer, Bilder,
+   Beschreibungen). **Nur für die Entwicklungsphase** – die Test-Keys erlauben
+   weder öffentliche Nutzung noch dauerhaftes Spiegeln. Dient zugleich als
+   funktionierende Demo für die spätere Partnerschafts-/Lizenzanfrage bei
+   Outdooractive.
+
+**Leitplanke:** Kernfunktionen (Erreichbarkeit, Rückreise-Check, Filter) dürfen
+nur Felder nutzen, die *beide* Quellen liefern können (Geometrie, Start-/Endpunkt,
+Dauer, Höhenmeter). Fällt Outdooractive später weg, verliert das Produkt nur
+Inhalte, nie Funktionalität. Der Livegang erfolgt entweder nur mit OSM-Touren
+oder nach Vertragsabschluss mit Outdooractive.
 
 Aus jeder Tour werden extrahiert und persistiert:
 
@@ -326,20 +348,44 @@ befüllt werden (deshalb stehen sie schon im MVP-Datenmodell).
 | ÖV-Routing | Transitous-API → später eigene MOTIS-Instanz | s. § 3.1; MOTIS braucht dann separaten Container-Host (§ 4.4) |
 | Fuß/Rad | MOTIS Street-Routing, ggf. Valhalla | s. § 3.2 |
 | Geocoding | Photon | frei, OSM |
+| i18n | next-intl + Vercel-Geo-Header | automatische Spracherkennung ohne externen Dienst (§ 7.1) |
 | Deployment | Vercel + Supabase (Free Tier fürs MVP), CI/CD via GitHub | Null-Ops-Start; einzige spätere Ausnahme: Routing-Host |
+
+### 7.1 Mehrsprachigkeit (i18n)
+
+**✅ Entschieden (2026-07-02):** Alle Sprachen der Alpenländer – Deutsch,
+Französisch, Italienisch, Slowenisch – plus Englisch als Fallback.
+
+- Umsetzung mit **next-intl** (Standard-i18n-Bibliothek für Next.js),
+  Übersetzungsdateien pro Sprache im Repo.
+- **Automatische Vorauswahl** beim ersten Besuch, in dieser Reihenfolge:
+  1. **Browser-Sprache** (`Accept-Language`-Header) – das stärkste Signal, denn
+     es beschreibt den User, nicht seinen Aufenthaltsort;
+  2. falls keine unterstützte Sprache dabei ist: **Land aus der IP-Adresse** –
+     Vercel liefert das als Request-Header (`x-vercel-ip-country`) frei Haus,
+     es ist kein externer Geo-Dienst nötig.
+- **Manuell änderbar:** Sprachumschalter in der Sidebar; die Wahl wird in einem
+  Cookie gespeichert und übersteuert ab dann jede Automatik.
+- **Abgrenzung:** Übersetzt wird die Benutzeroberfläche. Tourdaten (Namen,
+  Beschreibungen) liegen in der Sprache der Quelle vor und werden im MVP nicht
+  maschinell übersetzt – das wird in der UI transparent gemacht.
+- Das i18n-Grundgerüst wird ab M1 eingebaut (nachträgliches Einziehen ist
+  teuer), zunächst mit DE + EN befüllt; FR/IT/SL folgen vor dem Livegang.
 
 ## 8. MVP-Roadmap
 
 1. **M1 – Durchstich (1 Stadt):** Hardcodierter Start (z. B. München), Transitous
    One-to-Many, simple Kreis-Buffer statt echter Zubringer-Isochronen, 50 manuell
-   importierte OSM-Touren, Karte mit Fläche + Pins.
+   importierte OSM-Touren, Karte mit Fläche + Pins; i18n-Grundgerüst (DE/EN).
 2. **M2 – echtes MVP:** Geocoding-Suche, Slider (ÖV-Budget, Fuß/Rad, Zubringer-
-   Budget), echte Zubringer-Isochronen mit Vorberechnung/Caching, OSM-Tourimport
-   für den ganzen Alpenraum, Tour-Popup, Abfahrtszeit-Voreinstellung.
+   Budget), echte Zubringer-Isochronen mit Vorberechnung/Caching, beide
+   Tour-Importer (OSM alpenweit, Outdooractive-Test-API), Tour-Popup,
+   Abfahrtszeit-Voreinstellung.
 3. **M3 – Ausbaustufe 2:** Startzeit-Eingabe, Rückreise-Check on-demand pro Tour,
    Ampel-Anzeige, „letzte Rückfahrt".
-4. **M4 – Ausbaustufe 3 + Betrieb:** Filter, eigene MOTIS-Instanz (separater
-   Container-Host, § 4.4), Monitoring, ggf. Partner-Tourdaten.
+4. **M4 – Ausbaustufe 3 + Betrieb:** Filter, vollständige Übersetzungen
+   (FR/IT/SL), eigene MOTIS-Instanz (separater Container-Host, § 4.4),
+   Monitoring, Klärung Outdooractive-Lizenz für den Livegang.
 
 ## 9. Risiken
 
@@ -351,18 +397,27 @@ befüllt werden (deshalb stehen sie schon im MVP-Datenmodell).
 | Performance der Flächenberechnung | mittel | Vorberechnung der Zubringer-Isochronen (§ 4.2) |
 | Tourdauer-Schätzung ungenau (Stufe 2) | niedrig | Puffer + konservative Formel, als Schätzung kennzeichnen |
 
-## 10. Offene Fragen (bitte entscheiden)
+## 10. Entscheidungsprotokoll (ursprünglich offene Fragen)
 
-1. **Tourdaten:** Start mit OSM-Wanderrouten (frei, sofort) – ok? Oder gibt es
-   bereits einen Kontakt/eine Lizenz zu einer Plattform (Outdooractive o. ä.)?
-2. **Budget-Semantik:** getrennte Budgets für ÖV und Zubringer (Variante A,
-   empfohlen) oder ein Gesamtbudget (Variante B)?
-3. ~~**Betrieb:** Hosting-Budget?~~ **✅ Entschieden (2026-07-02):** Vercel +
-   Supabase + GitHub (Free Tier fürs MVP, § 4.4). Kosten entstehen erst später:
-   ggf. Supabase Pro (~25 US$/Monat) und – erst beim Wechsel weg von der
-   Transitous-API – ein eigener Routing-Host (~50–100 €/Monat).
-4. **Sprachen:** Nur Deutsch, oder mehrsprachig (bei „alle Alpenländer" liegt
-   DE/EN/FR/IT/SL nahe)? Beeinflusst v. a. das Frontend, früh entscheidbar, spät
-   teuer nachzurüsten.
-5. ~~**Frontend-Framework:** Svelte oder React?~~ **✅ Entschieden (2026-07-02):**
-   Next.js/React – folgt aus der Vercel-Präferenz.
+Alle Grundsatzfragen sind entschieden (Stand 2026-07-02):
+
+1. **Tourdaten:** ✅ Zwei Importer von Anfang an – OSM (livegang-fähig) und
+   Outdooractive-Test-API (nur Entwicklungsphase, Demo für Lizenzanfrage).
+   Details und Leitplanke in § 3.3.
+2. **Budget-Semantik:** ✅ Variante A – getrennte Budgets für ÖV und Zubringer
+   (§ 2.2).
+3. **Betrieb:** ✅ Vercel + Supabase + GitHub (Free Tier fürs MVP, § 4.4).
+   Kosten entstehen erst später: ggf. Supabase Pro (~25 US$/Monat) und – erst
+   beim Wechsel weg von der Transitous-API – ein eigener Routing-Host
+   (~50–100 €/Monat). Eine eigene MOTIS-Instanz ist **keine
+   MVP-Voraussetzung**, sondern die spätere Ablösung der Transitous-API
+   (Motive: eigene Rate-Limits, Verfügbarkeit, Unabhängigkeit, § 3.1).
+4. **Sprachen:** ✅ DE/FR/IT/SL + EN-Fallback; automatische Vorauswahl
+   (Browser-Sprache, dann IP-Land via Vercel-Header) mit manuellem
+   Umschalter (§ 7.1).
+5. **Frontend-Framework:** ✅ Next.js/React. Begründung bei
+   Vanilla-JS-Vorerfahrung: größtes Ökosystem, meiste Tutorials/Beispiele
+   (auch für MapLibre-Integration) und beste Vercel-Unterstützung. Svelte wäre
+   syntaktisch näher an HTML/CSS/JS, hat aber deutlich weniger Lernmaterial
+   und Community-Beispiele – bei „erstes Framework überhaupt" wiegt das
+   schwerer als die etwas steilere React-Lernkurve.
