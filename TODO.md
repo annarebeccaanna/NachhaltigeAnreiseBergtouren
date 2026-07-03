@@ -39,9 +39,19 @@ dann wird die Datei angelegt.
 ## Für Meilenstein 2 (Datenbank, Importer, echtes Rate Limiting)
 
 ### 4. Supabase-Projekt · Stufe: **Free (0 €) – reicht bis mindestens M3**
-[supabase.com](https://supabase.com/pricing) → Projekt anlegen (Region EU,
-z. B. Frankfurt) → im SQL-Editor die Extension `postgis` aktivieren
-(auf allen Plänen verfügbar).
+- [x] Projekt angelegt (2026-07-03): `https://bhuhbqcphmnwixiztags.supabase.co`
+- [ ] **Zwei Secret Keys** erstellen (Dashboard → Settings → API Keys →
+      „Create new secret key"), z. B. benannt `vercel` und `github-actions` –
+      neues Schlüsselsystem `sb_secret_…`, pro Verbraucher ein eigener Key
+      (einzeln widerrufbar; Legacy `service_role` existiert nicht mehr).
+- [ ] **GitHub:** Repo → Settings → Secrets and variables → Actions →
+      Secrets `SUPABASE_URL` und `SUPABASE_SECRET_KEY` (Key „github-actions")
+- [ ] **Vercel:** Settings → Environment Variables → `SUPABASE_URL` und
+      `SUPABASE_SECRET_KEY` (Key „vercel"; Production ✓ und Preview ✓)
+- [ ] Schema-Migration im SQL-Editor ausführen (Datei kommt mit dem M2-PR;
+      aktiviert auch PostGIS)
+
+Hinweise:
 - **Speicherbedarf-Schätzung (2026-07-03):** Touren-Metadaten ~50 MB +
   vereinfachte Geometrien ~100–150 MB + Indizes = **~150–250 MB von
   500 MB** im Vollausbau aller Alpenländer; M2 startet deutlich kleiner.

@@ -450,14 +450,17 @@ vertrauliche *Inhalte* gibt es nicht. Schützenswert sind vier Dinge:
 - **Next.js-Fallstrick:** Env-Variablen mit Präfix `NEXT_PUBLIC_` werden beim
   Build **ins Browser-Bundle kopiert**. Regel: kein Schlüssel bekommt jemals
   dieses Präfix; ein CI-Check (grep im Build) erzwingt das.
-- **Supabase-Fallstrick:** Supabase hat zwei Schlüssel – den öffentlichen
-  `anon`-Key (für direkten Browserzugriff gedacht) und den `service_role`-Key
-  (Vollzugriff). Architekturentscheidung: **kein direkter
-  Datenbankzugriff aus dem Browser.** Nur Route Handlers und GitHub Actions
-  sprechen die DB an (serverseitig, `service_role`). Zusätzlich – Defense in
-  Depth – wird **Row Level Security auf allen Tabellen aktiviert mit
-  Deny-all-Policies**: Selbst ein versehentlich veröffentlichter `anon`-Key
-  gäbe dann keinerlei Zugriff.
+- **Supabase-Schlüssel:** Es gilt das neue Schlüsselsystem (`sb_publishable_…`
+  für Browser-Zugriff, `sb_secret_…` mit Vollzugriff; die Legacy-Keys
+  `anon`/`service_role` existieren in neuen Projekten nicht mehr).
+  Architekturentscheidung: **kein direkter Datenbankzugriff aus dem
+  Browser** – nur Route Handlers und GitHub Actions sprechen die DB an,
+  jeweils mit einem **eigenen Secret Key pro Verbraucher** (einer für
+  Vercel, einer für Actions): Ein Leak zwingt nur zur Rotation genau eines
+  Schlüssels. Secret Keys verweigern zudem von sich aus den Einsatz im
+  Browser (HTTP 401). Zusätzlich – Defense in Depth – wird **Row Level
+  Security auf allen Tabellen aktiviert mit Deny-all-Policies**; der
+  Publishable Key wird gar nicht erst verwendet.
 - **Outdooractive-Keys** existieren nur im Import-Job (GitHub-Action-Secret);
   keine Client-Anfrage enthält sie.
 - **Basemap ohne Schlüssel:** bevorzugt OpenFreeMap, dann liegt gar kein
