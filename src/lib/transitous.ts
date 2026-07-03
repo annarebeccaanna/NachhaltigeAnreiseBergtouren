@@ -33,13 +33,17 @@ export function defaultDeparture(now = new Date()): Date {
   return d;
 }
 
-interface OneToAllPlace {
-  stopId?: string;
-  name?: string;
-  lat: number;
-  lon: number;
-  /** Reisezeit in Sekunden laut MOTIS */
-  duration?: number;
+/** Antwortformat von MOTIS /api/v1/one-to-all (verifiziert 2026-07-02 gegen
+ *  api.transitous.org): Ortsdaten unter `place`, `duration` in **Minuten**. */
+interface OneToAllEntry {
+  place: {
+    stopId?: string;
+    parentId?: string;
+    name?: string;
+    lat: number;
+    lon: number;
+  };
+  duration: number;
 }
 
 async function fetchOneToAll(
@@ -60,16 +64,21 @@ async function fetchOneToAll(
   if (!res.ok) {
     throw new Error(`Transitous one-to-all antwortete ${res.status}`);
   }
-  const body = (await res.json()) as { all?: OneToAllPlace[] };
-  const places = body.all ?? [];
-  return places
-    .filter((p) => typeof p.lat === 'number' && typeof p.lon === 'number')
-    .map((p, i) => ({
-      id: p.stopId ?? `stop-${i}`,
-      name: p.name ?? 'Haltestelle',
-      lat: p.lat,
-      lon: p.lon,
-      travelMinutes: Math.round((p.duration ?? 0) / 60),
-    }))
-    .filter((s) => s.travelMinutes <= params.maxTransitMinutes);
+  const body = (await res.json()) as { all?: OneToAllEntry[] };
+  return (body.all ?? [])
+    .filter(
+      (e) =>
+        e.place &&
+        typeof e.place.lat === 'number' &&
+        typeof e.place.lon === 'number' &&
+        typeof e.duration === 'number' &&
+        e.duration <= params.maxTransitMinutes
+    )
+    .map((e, i) => ({
+      id: e.place.stopId ?? `stop-${i}`,
+      name: e.place.name ?? 'Haltestelle',
+      lat: e.place.lat,
+      lon: e.place.lon,
+      travelMinutes: e.duration,
+    }));
 }

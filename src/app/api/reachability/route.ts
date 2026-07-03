@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getReachableStops, defaultDeparture } from '@/lib/transitous';
-import { circlePolygon, unionPolygons, haversineKm, FEEDER_SPEED_KMH } from '@/lib/geo';
+import { circlePolygon, unionPolygons, haversineKm, thinStopsToGrid, FEEDER_SPEED_KMH } from '@/lib/geo';
 import type { ReachableStop, Tour } from '@/lib/types';
 import toursData from '@/data/tours.json';
 
@@ -90,10 +90,17 @@ export async function GET(request: NextRequest) {
   }
 
   const radiusKm = (FEEDER_SPEED_KMH[params.mode] * params.feederMinutes) / 60;
+
+  // Fläche & Anzeige: ausgedünnte Haltestellen (§ 4.2); die Live-API liefert
+  // zehntausende Einträge inkl. Bahnsteig-Duplikaten.
+  const displayStops = thinStopsToGrid(stops, radiusKm);
+  const circleSteps = displayStops.length > 800 ? 16 : 24;
   const isochrone = unionPolygons(
-    stops.map((s) => circlePolygon(s.lat, s.lon, radiusKm))
+    displayStops.map((s) => circlePolygon(s.lat, s.lon, radiusKm, circleSteps))
   );
 
+  // Tour-Zuordnung: exakt über die *vollständige* Haltestellenliste (§ 4.2 –
+  // die Pin-Auswahl rechnet genau, nur die Fläche ist genähert).
   const reachableTours = tours
     .map((tour) => {
       let nearest: { stop: ReachableStop; distanceKm: number } | null = null;
@@ -111,7 +118,7 @@ export async function GET(request: NextRequest) {
       depart: params.depart ?? defaultDeparture().toISOString(),
       mode: params.mode,
       feederRadiusKm: Math.round(radiusKm * 10) / 10,
-      stopCount: stops.length,
+      stopCount: displayStops.length,
       tourCount: reachableTours.length,
     },
     isochrone: {
@@ -121,7 +128,7 @@ export async function GET(request: NextRequest) {
     },
     stops: {
       type: 'FeatureCollection' as const,
-      features: stops.map((s) => ({
+      features: displayStops.map((s) => ({
         type: 'Feature' as const,
         properties: { name: s.name, travelMinutes: s.travelMinutes },
         geometry: { type: 'Point' as const, coordinates: [s.lon, s.lat] },

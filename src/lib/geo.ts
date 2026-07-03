@@ -29,12 +29,39 @@ export function circlePolygon(lat: number, lon: number, radiusKm: number, steps 
   return [ring];
 }
 
-/** Vereinigung vieler Kreise zu einem MultiPolygon (GeoJSON-Koordinaten). */
+/** Vereinigung vieler Kreise zu einem MultiPolygon (GeoJSON-Koordinaten).
+ *  Gestückelt, weil polygon-clipping bei Tausenden Argumenten auf einmal
+ *  deutlich langsamer wird und die Argumentliste begrenzt ist. */
 export function unionPolygons(polygons: PcPolygon[]): GeoJSON.MultiPolygon {
   if (polygons.length === 0) {
     return { type: 'MultiPolygon', coordinates: [] };
   }
-  const [first, ...rest] = polygons;
-  const result = polygonClipping.union(first, ...rest);
+  const CHUNK = 400;
+  let result: ReturnType<typeof polygonClipping.union> = [polygons[0]];
+  for (let i = 1; i < polygons.length; i += CHUNK) {
+    result = polygonClipping.union(result, ...polygons.slice(i, i + CHUNK));
+  }
   return { type: 'MultiPolygon', coordinates: result };
+}
+
+/**
+ * Dünnt Haltestellen auf ein Raster aus (§ 4.2): Bahnsteige/Mast-Duplikate
+ * und dichte Stadtnetze kollabieren auf einen Vertreter pro Zelle (kürzeste
+ * Reisezeit gewinnt). Zellgröße relativ zum Zubringer-Radius, damit die
+ * Flächenabdeckung optisch praktisch unverändert bleibt.
+ */
+export function thinStopsToGrid<T extends { lat: number; lon: number; travelMinutes: number }>(
+  stops: T[],
+  radiusKm: number
+): T[] {
+  const cellKm = Math.max(radiusKm * 0.5, 0.4);
+  const cellLat = cellKm / 111;
+  const best = new Map<string, T>();
+  for (const stop of stops) {
+    const cellLon = cellLat / Math.cos((stop.lat * Math.PI) / 180);
+    const key = `${Math.round(stop.lat / cellLat)}:${Math.round(stop.lon / cellLon)}`;
+    const current = best.get(key);
+    if (!current || stop.travelMinutes < current.travelMinutes) best.set(key, stop);
+  }
+  return [...best.values()];
 }

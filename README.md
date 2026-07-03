@@ -19,6 +19,10 @@ npm run dev            # http://localhost:3000 – nutzt die Transitous-API (liv
 TRANSITOUS_MODE=mock npm run dev   # ohne Netzzugang: Beispiel-Fahrplandaten
 ```
 
+**Hinweis Claude-Code-Cloud-Sandbox:** Ausgehender Verkehr läuft dort über
+einen Proxy, den Nodes `fetch` nur mit Opt-in nutzt – Server dann mit
+`NODE_USE_ENV_PROXY=1 npm run dev` starten (auf Vercel/lokal nicht nötig).
+
 | Env-Variable | Werte | Zweck |
 |---|---|---|
 | `TRANSITOUS_MODE` | `live` (Default) / `mock` | Fahrplandaten: echte Transitous-API oder Fixture München |

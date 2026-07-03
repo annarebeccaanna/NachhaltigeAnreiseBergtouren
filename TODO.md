@@ -6,13 +6,9 @@ Die technische Umsetzung übernimmt jeweils die Entwicklung, sobald der Zugang d
 
 ## Jetzt (für Meilenstein 1)
 
-### 1. Netzwerk-Freigaben in der Claude-Code-Umgebung · kostenlos
-In den Einstellungen der Claude-Code-Cloud-Umgebung (Netzwerk-Policy) freigeben:
-- `api.transitous.org` – echte Fahrplandaten statt Mock-Modus
-- `overpass-api.de` – OSM-Tourimport (ab M2)
-- `tiles.openfreemap.org` – Basemap-Kacheln für Browser-Tests in der Sandbox
-
-Ohne Freigabe läuft die App im gekennzeichneten Demo-Modus weiter.
+### 1. ~~Netzwerk-Freigaben in der Claude-Code-Umgebung~~ ✅ erledigt (2026-07-03)
+`api.transitous.org`, `overpass-api.de` und `tiles.openfreemap.org` sind
+freigegeben; der Live-Modus gegen die echte Transitous-API ist verifiziert.
 
 ### 2. Vercel-Konto · Stufe: **Hobby (0 €)**
 [vercel.com](https://vercel.com) → Sign-up mit GitHub → Repository importieren.
@@ -95,8 +91,9 @@ Eigene Domain (z. B. bei INWX, Namecheap) und in Vercel verbinden;
 
 - [x] Technische Konzeption inkl. Sicherheitskonzept (`KONZEPT.md`)
 - [x] M1-Durchstich: Karte, Sidebar, Erreichbarkeits-API, i18n DE/EN
-- [ ] Live-Verifikation Transitous `one-to-all` (blockiert durch Punkt 1;
-      Response-Format beim ersten Live-Test gegenprüfen)
-- [ ] M2: Supabase-Schema + OSM-Importer (blockiert durch Punkte 1 & 4)
+- [x] Live-Verifikation Transitous `one-to-all` (Format korrigiert:
+      Ortsdaten unter `place`, `duration` in Minuten; Haltestellen-
+      Ausdünnung für 16k+-Antworten ergänzt)
+- [ ] M2: Supabase-Schema + OSM-Importer (blockiert durch Punkt 4)
 - [ ] M2: Upstash-Rate-Limit statt In-Memory-Platzhalter (blockiert durch 5)
 - [ ] M2: FR/IT/SL-Übersetzungen, Geocoding-Suche, echte Zubringer-Isochronen
