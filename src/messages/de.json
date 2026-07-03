@@ -1,0 +1,47 @@
+{
+  "app": {
+    "title": "Bergtouren mit Bahn & Bus",
+    "subtitle": "Welche Touren erreichst du öffentlich?"
+  },
+  "sidebar": {
+    "start": "Startpunkt",
+    "startCity": "München Hbf",
+    "startHint": "Freie Startpunktwahl folgt in der nächsten Ausbaustufe.",
+    "transitBudget": "Max. Anreise mit Bahn & Bus",
+    "feederMode": "Zum Tourstart",
+    "walk": "zu Fuß",
+    "bike": "mit dem Rad",
+    "feederBudget": "Max. Zeit zum Tourstart",
+    "minutes": "{value} min",
+    "apply": "Karte aktualisieren",
+    "loading": "Berechne Erreichbarkeit …",
+    "results": "{tours} Touren über {stops} Haltestellen erreichbar",
+    "departNote": "Abfahrt: Samstag 07:00 Uhr (Voreinstellung)",
+    "mockNote": "Demo-Modus: Es werden Beispiel-Fahrplandaten angezeigt, keine Echtzeitauskunft.",
+    "error": "Die Berechnung ist fehlgeschlagen. Bitte später erneut versuchen.",
+    "legend": "Legende",
+    "legendArea": "mit ÖV + Zubringer erreichbar",
+    "legendStop": "erreichte Haltestelle",
+    "legendTour": "Tourstartpunkt"
+  },
+  "popup": {
+    "roundTrip": "Rundtour",
+    "aToB": "Streckentour",
+    "duration": "Gehzeit",
+    "distance": "Länge",
+    "ascent": "Aufstieg",
+    "descent": "Abstieg",
+    "difficulty": "Schwierigkeit",
+    "nearestStop": "Nächste Haltestelle",
+    "transitTime": "ÖV-Anreise",
+    "hours": "{hours} h {minutes} min",
+    "difficulty_leicht": "leicht",
+    "difficulty_mittel": "mittel",
+    "difficulty_schwer": "schwer"
+  },
+  "lang": {
+    "label": "Sprache",
+    "de": "Deutsch",
+    "en": "English"
+  }
+}

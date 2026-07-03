@@ -1,49 +1,252 @@
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-html {
-  height: 100%;
-}
-
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-body {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --green: #2f855a;
+  --orange: #dd6b20;
+  --gray: #4a5568;
+  --bg: #ffffff;
+  --text: #1a202c;
+  --border: #e2e8f0;
 }
 
 * {
   box-sizing: border-box;
-  padding: 0;
   margin: 0;
+  padding: 0;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+html,
+body {
+  height: 100%;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.app {
+  display: flex;
+  height: 100dvh;
+}
+
+/* --- Sidebar (Einstellungen links, Konzept § 4) --- */
+
+.sidebar {
+  width: 340px;
+  flex-shrink: 0;
+  padding: 1.25rem;
+  overflow-y: auto;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.sidebar h1 {
+  font-size: 1.25rem;
+  line-height: 1.3;
+}
+
+.subtitle {
+  color: var(--gray);
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+.control label,
+.control .grouplabel {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.control input[type='range'] {
+  width: 100%;
+  accent-color: var(--green);
+}
+
+.control select {
+  width: 100%;
+  padding: 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #f7fafc;
+}
+
+.hint {
+  font-size: 0.78rem;
+  color: var(--gray);
+  margin-top: 0.3rem;
+}
+
+.modes {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.mode {
+  flex: 1;
+  text-align: center;
+  padding: 0.45rem 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  position: relative;
+}
+
+.mode input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mode.active {
+  border-color: var(--green);
+  background: #f0fff4;
+  font-weight: 600;
+}
+
+.apply {
+  padding: 0.6rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--green);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.apply:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.error {
+  color: #c53030;
+  font-size: 0.85rem;
+}
+
+.results p {
+  font-size: 0.9rem;
+}
+
+.results .mock {
+  margin-top: 0.4rem;
+  padding: 0.5rem;
+  background: #fffaf0;
+  border: 1px solid #f6ad55;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  color: #7b341e;
+}
+
+.legend h2 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--gray);
+  margin-bottom: 0.4rem;
+}
+
+.legend p {
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.swatch.area {
+  background: rgba(47, 133, 90, 0.3);
+  border: 1px solid var(--green);
+  border-radius: 3px;
+}
+
+.swatch.stop {
+  background: var(--gray);
+  width: 8px;
+  height: 8px;
+  margin: 0 3px;
+}
+
+.swatch.tour {
+  background: var(--orange);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+footer {
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+
+/* --- Karte --- */
+
+.map {
+  flex: 1;
+  min-width: 0;
+}
+
+.tour-popup h3 {
+  font-size: 1rem;
+  margin-bottom: 0.2rem;
+  padding-right: 1rem;
+}
+
+.tour-popup .tour-type {
+  color: var(--gray);
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.tour-popup table {
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  width: 100%;
+}
+
+.tour-popup th {
+  text-align: left;
+  font-weight: 600;
+  padding: 0.15rem 0.6rem 0.15rem 0;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+.tour-popup td {
+  padding: 0.15rem 0;
+}
+
+.tour-popup .tour-desc {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--gray);
+}
+
+/* --- Mobil: Sidebar oben, Karte darunter --- */
+
+@media (max-width: 720px) {
+  .app {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    max-height: 45dvh;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
   }
 }

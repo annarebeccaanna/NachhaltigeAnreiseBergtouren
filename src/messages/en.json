@@ -1,0 +1,47 @@
+{
+  "app": {
+    "title": "Mountain tours by train & bus",
+    "subtitle": "Which tours can you reach by public transport?"
+  },
+  "sidebar": {
+    "start": "Starting point",
+    "startCity": "Munich Central Station",
+    "startHint": "Free choice of starting point coming in the next stage.",
+    "transitBudget": "Max. journey by train & bus",
+    "feederMode": "Getting to the trailhead",
+    "walk": "on foot",
+    "bike": "by bike",
+    "feederBudget": "Max. time to trailhead",
+    "minutes": "{value} min",
+    "apply": "Update map",
+    "loading": "Calculating reachability …",
+    "results": "{tours} tours reachable via {stops} stops",
+    "departNote": "Departure: Saturday 7:00 am (default)",
+    "mockNote": "Demo mode: sample timetable data is shown, not a live journey planner.",
+    "error": "The calculation failed. Please try again later.",
+    "legend": "Legend",
+    "legendArea": "reachable by transit + feeder",
+    "legendStop": "reached stop",
+    "legendTour": "tour starting point"
+  },
+  "popup": {
+    "roundTrip": "Loop tour",
+    "aToB": "Point-to-point tour",
+    "duration": "Walking time",
+    "distance": "Distance",
+    "ascent": "Ascent",
+    "descent": "Descent",
+    "difficulty": "Difficulty",
+    "nearestStop": "Nearest stop",
+    "transitTime": "Transit journey",
+    "hours": "{hours} h {minutes} min",
+    "difficulty_leicht": "easy",
+    "difficulty_mittel": "moderate",
+    "difficulty_schwer": "hard"
+  },
+  "lang": {
+    "label": "Language",
+    "de": "Deutsch",
+    "en": "English"
+  }
+}
