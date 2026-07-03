@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nachhaltige Anreise zu Bergtouren
 
-## Getting Started
+Interaktive Karte, die zeigt, welche Bergtouren im Alpenraum von einem
+Startpunkt aus **mit Bahn & Bus plus Fuß-/Rad-Zubringer** erreichbar sind.
+Erreichbare Gebiete werden als Fläche eingefärbt, Tourstartpunkte als Pins
+angezeigt; Klick auf einen Pin öffnet die Tourdetails.
 
-First, run the development server:
+- 📋 **Konzeption:** [KONZEPT.md](./KONZEPT.md) (Architektur, Datenquellen,
+  Sicherheitskonzept, Roadmap)
+- ✅ **Offene Zugänge/Aufgaben:** [TODO.md](./TODO.md)
+- 🏔️ **Stand:** Meilenstein 1 (Durchstich) – fester Startpunkt München,
+  Beispieltouren, Mock-Fahrplandaten in Umgebungen ohne Netzzugang
+
+## Entwicklung
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev            # http://localhost:3000 – nutzt die Transitous-API (live)
+TRANSITOUS_MODE=mock npm run dev   # ohne Netzzugang: Beispiel-Fahrplandaten
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| Env-Variable | Werte | Zweck |
+|---|---|---|
+| `TRANSITOUS_MODE` | `live` (Default) / `mock` | Fahrplandaten: echte Transitous-API oder Fixture München |
+| `TRANSITOUS_BASE_URL` | URL | abweichende MOTIS-Instanz (Default `https://api.transitous.org`) |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**Regel aus dem Sicherheitskonzept (§ 11.2):** Kein Geheimnis bekommt jemals
+das Präfix `NEXT_PUBLIC_` – solche Variablen landen im Browser-Bundle.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Architektur (M1)
 
-## Learn More
+```
+Browser ── MapLibre-Karte + Sidebar (Next.js, next-intl DE/EN)
+   │
+   └─ GET /api/reachability  (zod-Validierung, Rate-Limit, Cache)
+          │
+          ├─ Transitous/MOTIS one-to-all → erreichbare Haltestellen
+          ├─ Kreis-Buffer + Union → Isochronen-Fläche (M1-Näherung)
+          └─ Tourfilter über Haltestellen-Distanz → Pins
+```
 
-To learn more about Next.js, take a look at the following resources:
+Beispieltouren: `src/data/tours.json` (21 manuell kuratierte Touren,
+wird in M2 durch den OSM-Importer ersetzt).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Screenshot-Hilfsskript
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm start &
+node scripts/screenshot.mjs http://localhost:3000/ app.png
+```
