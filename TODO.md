@@ -30,11 +30,10 @@ Konto verbunden, Repo importiert. Verbleibende Hinweise:
 - [ ] Secret Scanning + Push Protection aktivieren (Settings → Code security)
 - [ ] Dependabot aktivieren
 
-### 3a. Open-Source-Lizenz wählen · Entscheidung nötig
-Ohne LICENSE-Datei gilt „alle Rechte vorbehalten" trotz öffentlichem Code.
-Optionen: **MIT** (einfach, maximale Nachnutzung) oder **AGPL-3.0**
-(verhindert geschlossene kommerzielle Ableger). Kurz Bescheid geben,
-dann wird die Datei angelegt.
+### 3a. ~~Open-Source-Lizenz wählen~~ ✅ erledigt (2026-07-03)
+Entscheidung: **AGPL-3.0** – verhindert geschlossene kommerzielle Ableger
+des Webdienstes. `LICENSE`-Datei liegt im Repo, `package.json` deklariert
+`AGPL-3.0-only`.
 
 ## Für Meilenstein 2 (Datenbank, Importer, echtes Rate Limiting)
 

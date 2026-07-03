@@ -46,6 +46,12 @@ Browser ── MapLibre-Karte + Sidebar (Next.js, next-intl DE/EN)
 Beispieltouren: `src/data/tours.json` (21 manuell kuratierte Touren,
 wird in M2 durch den OSM-Importer ersetzt).
 
+## Lizenz
+
+[AGPL-3.0](./LICENSE) – Nachnutzung und Weiterentwicklung ausdrücklich
+erwünscht; wer den Dienst (auch verändert) betreibt, muss den Quellcode
+offenlegen.
+
 ## Screenshot-Hilfsskript
 
 ```bash
