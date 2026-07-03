@@ -94,6 +94,9 @@ export default function Sidebar({ settings, onChange, onApply, meta, loading, er
         <section className="results">
           <p>{t('sidebar.results', { tours: meta.tourCount, stops: meta.stopCount })}</p>
           {meta.dataMode === 'mock' && <p className="mock">{t('sidebar.mockNote')}</p>}
+          {meta.tourSource === 'beispieldaten' && (
+            <p className="mock">{t('sidebar.sampleToursNote')}</p>
+          )}
         </section>
       )}
 

@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Importer-Dry-Run-Ausgabe
+.import-preview.json

@@ -1,0 +1,48 @@
+# Wöchentlicher OSM-Tourimport nach Supabase (KONZEPT.md § 4.4).
+# Nebeneffekt: verhindert das Auto-Pausieren des Supabase-Free-Projekts.
+name: Tour-Import (OSM)
+
+on:
+  schedule:
+    - cron: '23 3 * * 1' # montags 03:23 UTC
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'Max. Anzahl Relationen'
+        required: false
+        default: '400'
+      bbox:
+        description: 'Bounding Box (süd,west,nord,ost)'
+        required: false
+        default: '47.2,10.6,47.95,12.9'
+      dry_run:
+        description: 'Nur transformieren, nicht schreiben'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tour-import
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Repository auschecken
+        # actions/checkout v4.2.2, SHA-gepinnt (§ 11.5)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Import ausführen
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: |
+          node scripts/import-osm-tours.mjs \
+            --limit=${{ inputs.limit || '400' }} \
+            --bbox=${{ inputs.bbox || '47.2,10.6,47.95,12.9' }} \
+            ${{ inputs.dry_run == true && '--dry-run' || '' }}

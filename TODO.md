@@ -39,16 +39,18 @@ des Webdienstes. `LICENSE`-Datei liegt im Repo, `package.json` deklariert
 
 ### 4. Supabase-Projekt · Stufe: **Free (0 €) – reicht bis mindestens M3**
 - [x] Projekt angelegt (2026-07-03): `https://bhuhbqcphmnwixiztags.supabase.co`
-- [ ] **Zwei Secret Keys** erstellen (Dashboard → Settings → API Keys →
-      „Create new secret key"), z. B. benannt `vercel` und `github-actions` –
-      neues Schlüsselsystem `sb_secret_…`, pro Verbraucher ein eigener Key
-      (einzeln widerrufbar; Legacy `service_role` existiert nicht mehr).
-- [ ] **GitHub:** Repo → Settings → Secrets and variables → Actions →
-      Secrets `SUPABASE_URL` und `SUPABASE_SECRET_KEY` (Key „github-actions")
-- [ ] **Vercel:** Settings → Environment Variables → `SUPABASE_URL` und
-      `SUPABASE_SECRET_KEY` (Key „vercel"; Production ✓ und Preview ✓)
-- [ ] Schema-Migration im SQL-Editor ausführen (Datei kommt mit dem M2-PR;
-      aktiviert auch PostGIS)
+- [x] **Zwei Secret Keys** erstellt (`vercel`, `github-actions`) – neues
+      Schlüsselsystem `sb_secret_…`, pro Verbraucher ein eigener Key
+      (2026-07-03)
+- [x] **GitHub:** Actions-Secrets `SUPABASE_URL` + `SUPABASE_SECRET_KEY`
+      hinterlegt (2026-07-03)
+- [x] **Vercel:** Env-Variablen `SUPABASE_URL` + `SUPABASE_SECRET_KEY`
+      hinterlegt, Production + Preview (2026-07-03)
+- [ ] **Schema-Migration ausführen:** Supabase Dashboard → SQL Editor →
+      Inhalt von `supabase/migrations/0001_touren.sql` einfügen → Run.
+      (Aktiviert PostGIS, legt Tabellen + RLS + RPC an. Danach den
+      Workflow „Tour-Import (OSM)" im GitHub-Actions-Tab einmal manuell
+      starten – oder auf den Montags-Cron warten.)
 
 Hinweise:
 - **Speicherbedarf-Schätzung (2026-07-03):** Touren-Metadaten ~50 MB +
@@ -114,6 +116,10 @@ Eigene Domain (z. B. bei INWX, Namecheap) und in Vercel verbinden;
 - [x] Live-Verifikation Transitous `one-to-all` (Format korrigiert:
       Ortsdaten unter `place`, `duration` in Minuten; Haltestellen-
       Ausdünnung für 16k+-Antworten ergänzt)
-- [ ] M2: Supabase-Schema + OSM-Importer (blockiert durch Punkt 4)
+- [x] M2: Supabase-Schema (Migration), Backend-Anbindung mit Fixture-
+      Fallback, OSM-Importer + wöchentliche GitHub Action (2026-07-03;
+      aktiv nach Ausführen der Migration, s. Punkt 4)
 - [ ] M2: Upstash-Rate-Limit statt In-Memory-Platzhalter (blockiert durch 5)
 - [ ] M2: FR/IT/SL-Übersetzungen, Geocoding-Suche, echte Zubringer-Isochronen
+- [ ] M2: Import-Gebiet schrittweise auf alle Alpenländer erweitern
+      (Start: Bayerische Alpen + Tirol)
