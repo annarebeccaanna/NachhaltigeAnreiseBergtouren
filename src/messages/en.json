@@ -18,6 +18,7 @@
     "results": "{tours} tours reachable via {stops} stops",
     "departNote": "Departure: Saturday 7:00 am (default)",
     "mockNote": "Demo mode: sample timetable data is shown, not a live journey planner.",
+    "sampleToursNote": "Tour data: curated sample tours (OSM import coming).",
     "error": "The calculation failed. Please try again later.",
     "legend": "Legend",
     "legendArea": "reachable by transit + feeder",

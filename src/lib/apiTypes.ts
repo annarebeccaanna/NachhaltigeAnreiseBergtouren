@@ -7,6 +7,7 @@ export interface ReachabilityResponse {
     feederRadiusKm: number;
     stopCount: number;
     tourCount: number;
+    tourSource: 'supabase' | 'beispieldaten';
   };
   isochrone: GeoJSON.Feature<GeoJSON.MultiPolygon>;
   stops: GeoJSON.FeatureCollection<GeoJSON.Point>;

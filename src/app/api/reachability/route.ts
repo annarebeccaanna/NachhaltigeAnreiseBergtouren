@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getReachableStops, defaultDeparture } from '@/lib/transitous';
-import { circlePolygon, unionPolygons, haversineKm, thinStopsToGrid, FEEDER_SPEED_KMH } from '@/lib/geo';
-import type { ReachableStop, Tour } from '@/lib/types';
-import toursData from '@/data/tours.json';
+import { circlePolygon, unionPolygons, thinStopsToGrid, FEEDER_SPEED_KMH } from '@/lib/geo';
+import { findReachableTours } from '@/lib/toursRepo';
+import type { ReachableStop } from '@/lib/types';
 
 /**
  * GET /api/reachability – liefert Isochrone + erreichbare Touren in einer
@@ -46,8 +46,6 @@ function rateLimited(ip: string): boolean {
 // Antwort-Cache: identische Parameter = identische Fläche (§ 11.3 Cache-first)
 const CACHE_TTL_MS = 60 * 60 * 1000;
 const responseCache = new Map<string, { expires: number; body: unknown }>();
-
-const tours = (toursData as { touren: Tour[] }).touren;
 
 export async function GET(request: NextRequest) {
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'local';
@@ -99,18 +97,13 @@ export async function GET(request: NextRequest) {
     displayStops.map((s) => circlePolygon(s.lat, s.lon, radiusKm, circleSteps))
   );
 
-  // Tour-Zuordnung: exakt über die *vollständige* Haltestellenliste (§ 4.2 –
-  // die Pin-Auswahl rechnet genau, nur die Fläche ist genähert).
-  const reachableTours = tours
-    .map((tour) => {
-      let nearest: { stop: ReachableStop; distanceKm: number } | null = null;
-      for (const stop of stops) {
-        const d = haversineKm(tour.start_punkt.lat, tour.start_punkt.lon, stop.lat, stop.lon);
-        if (!nearest || d < nearest.distanceKm) nearest = { stop, distanceKm: d };
-      }
-      return { tour, nearest };
-    })
-    .filter((t) => t.nearest !== null && t.nearest.distanceKm <= radiusKm);
+  // Tour-Zuordnung: Supabase (räumliche RPC) mit Fallback auf Beispieldaten;
+  // die nächste Haltestelle wird exakt über die vollständige Liste bestimmt
+  // (§ 4.2 – die Pin-Auswahl rechnet genau, nur die Fläche ist genähert).
+  const { matches: reachableTours, source: tourSource } = await findReachableTours(
+    stops,
+    radiusKm
+  );
 
   const body = {
     meta: {
@@ -120,6 +113,7 @@ export async function GET(request: NextRequest) {
       feederRadiusKm: Math.round(radiusKm * 10) / 10,
       stopCount: displayStops.length,
       tourCount: reachableTours.length,
+      tourSource,
     },
     isochrone: {
       type: 'Feature' as const,

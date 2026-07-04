@@ -18,6 +18,7 @@
     "results": "{tours} Touren über {stops} Haltestellen erreichbar",
     "departNote": "Abfahrt: Samstag 07:00 Uhr (Voreinstellung)",
     "mockNote": "Demo-Modus: Es werden Beispiel-Fahrplandaten angezeigt, keine Echtzeitauskunft.",
+    "sampleToursNote": "Tourdaten: kuratierte Beispieltouren (OSM-Import folgt).",
     "error": "Die Berechnung ist fehlgeschlagen. Bitte später erneut versuchen.",
     "legend": "Legende",
     "legendArea": "mit ÖV + Zubringer erreichbar",

@@ -10,39 +10,61 @@ Die technische Umsetzung übernimmt jeweils die Entwicklung, sobald der Zugang d
 `api.transitous.org`, `overpass-api.de` und `tiles.openfreemap.org` sind
 freigegeben; der Live-Modus gegen die echte Transitous-API ist verifiziert.
 
-### 2. Vercel-Konto · Stufe: **Hobby (0 €)**
-[vercel.com](https://vercel.com) → Sign-up mit GitHub → Repository importieren.
-- Hobby reicht fürs MVP: 100 GB Transfer, 1 Mio. Function-Aufrufe/Monat,
-  max. 60 s Funktionsdauer ([Limits](https://vercel.com/docs/plans/hobby)).
-- **Achtung:** Hobby ist nur für **nicht-kommerzielle** Nutzung erlaubt
-  ([Fair Use](https://vercel.com/docs/limits/fair-use-guidelines)). Sobald das
-  Projekt Geld verdienen soll: **Pro, 20 US$/Monat/Person**
-  ([Preise](https://vercel.com/pricing)).
-- Keine Env-Variable nötig; `TRANSITOUS_MODE` nur in Umgebungen ohne
-  Netzzugang auf `mock` setzen.
+### 2. ~~Vercel-Konto (Hobby, 0 €)~~ ✅ erledigt (2026-07-03)
+Konto verbunden, Repo importiert. Verbleibende Hinweise:
+- **Production Branch** in Vercel → Settings → Git muss `main` sein.
+- Hobby-Limits: 100 GB Transfer, 1 Mio. Function-Aufrufe/Monat, 60 s
+  Funktionsdauer ([Limits](https://vercel.com/docs/plans/hobby)); nur
+  **nicht-kommerzielle** Nutzung – bei Kommerzialisierung Pro
+  (20 US$/Monat, [Preise](https://vercel.com/pricing)).
+- Keine Env-Variablen nötig (`TRANSITOUS_MODE=mock` nur für Umgebungen
+  ohne Netzzugang).
 
-### 3. GitHub-Repo-Härtung (§ 11.5) · kostenlos bei öffentlichem Repo
-Settings → Code security: **Secret Scanning + Push Protection** aktivieren;
-Branches → **Branch Protection** für `main`; Dependabot aktivieren.
-- Bei **öffentlichem** Repo: alles kostenlos.
-- Bei **privatem** Repo: Branch-Protection-Rules erst ab **GitHub Pro
-  (4 US$/Monat)**; erweitertes Secret Scanning erst mit Advanced Security
-  (Team/Enterprise). → Empfehlung: Repo auf public stellen (Open Source passt
-  zum Projektcharakter) oder GitHub Pro.
+### 3. GitHub-Repo-Härtung (§ 11.5) · teilweise offen
+- [x] Repo auf **public** gestellt (2026-07-03) → alle Schutzfunktionen
+      kostenlos
+- [x] `main`-Branch angelegt, PR-Workflow etabliert (2026-07-03)
+- [ ] Default-Branch auf `main` umstellen (Settings → General)
+- [ ] Branch Protection für `main`: „Require a pull request before merging"
+      (Settings → Branches)
+- [ ] Secret Scanning + Push Protection aktivieren (Settings → Code security)
+- [ ] Dependabot aktivieren
+
+### 3a. ~~Open-Source-Lizenz wählen~~ ✅ erledigt (2026-07-03)
+Entscheidung: **AGPL-3.0** – verhindert geschlossene kommerzielle Ableger
+des Webdienstes. `LICENSE`-Datei liegt im Repo, `package.json` deklariert
+`AGPL-3.0-only`.
 
 ## Für Meilenstein 2 (Datenbank, Importer, echtes Rate Limiting)
 
-### 4. Supabase-Projekt · Stufe: **Free (0 €)**
-[supabase.com](https://supabase.com/pricing) → Projekt anlegen (Region EU,
-z. B. Frankfurt) → im SQL-Editor die Extension `postgis` aktivieren
-(auf allen Plänen verfügbar).
+### 4. Supabase-Projekt · Stufe: **Free (0 €) – reicht bis mindestens M3**
+- [x] Projekt angelegt (2026-07-03): `https://bhuhbqcphmnwixiztags.supabase.co`
+- [x] **Zwei Secret Keys** erstellt (`vercel`, `github-actions`) – neues
+      Schlüsselsystem `sb_secret_…`, pro Verbraucher ein eigener Key
+      (2026-07-03)
+- [x] **GitHub:** Actions-Secrets `SUPABASE_URL` + `SUPABASE_SECRET_KEY`
+      hinterlegt (2026-07-03)
+- [x] **Vercel:** Env-Variablen `SUPABASE_URL` + `SUPABASE_SECRET_KEY`
+      hinterlegt, Production + Preview (2026-07-03)
+- [ ] **Schema-Migration ausführen:** Supabase Dashboard → SQL Editor →
+      Inhalt von `supabase/migrations/0001_touren.sql` einfügen → Run.
+      (Aktiviert PostGIS, legt Tabellen + RLS + RPC an. Danach den
+      Workflow „Tour-Import (OSM)" im GitHub-Actions-Tab einmal manuell
+      starten – oder auf den Montags-Cron warten.)
+
+Hinweise:
+- **Speicherbedarf-Schätzung (2026-07-03):** Touren-Metadaten ~50 MB +
+  vereinfachte Geometrien ~100–150 MB + Indizes = **~150–250 MB von
+  500 MB** im Vollausbau aller Alpenländer; M2 startet deutlich kleiner.
+  Fahrpläne bleiben bei Transitous, Flächen im Redis-Cache → Free genügt.
 - Free-Limits: 500 MB Datenbank, max. 2 aktive Projekte, 5 GB Egress,
-  **keine Backups**.
+  **keine Backups** – unkritisch, da die DB ein reiner Ableitungs-Cache
+  ist (Quelle der Wahrheit: OSM + Importer, jederzeit neu aufbaubar).
 - **Achtung:** Free-Projekte **pausieren nach 7 Tagen ohne Zugriff** – der
   wöchentliche Import-Cron in GitHub Actions verhindert das nebenbei.
 - Upgrade-Pfad: **Pro 25 US$/Monat** (8 GB, Backups, kein Auto-Pause) –
-  voraussichtlich erst nötig, wenn die vorberechneten Zubringer-Isochronen
-  die 500 MB sprengen (KONZEPT § 4.4).
+  erst relevant, falls vorberechnete Zubringer-Isochronen gespeichert
+  werden (Optimierung ab M4, KONZEPT § 4.4).
 
 ### 5. Upstash Redis · Stufe: **Free (0 €)**
 Am einfachsten über die Vercel-Marketplace-Integration anlegen (verbindet
@@ -94,6 +116,10 @@ Eigene Domain (z. B. bei INWX, Namecheap) und in Vercel verbinden;
 - [x] Live-Verifikation Transitous `one-to-all` (Format korrigiert:
       Ortsdaten unter `place`, `duration` in Minuten; Haltestellen-
       Ausdünnung für 16k+-Antworten ergänzt)
-- [ ] M2: Supabase-Schema + OSM-Importer (blockiert durch Punkt 4)
+- [x] M2: Supabase-Schema (Migration), Backend-Anbindung mit Fixture-
+      Fallback, OSM-Importer + wöchentliche GitHub Action (2026-07-03;
+      aktiv nach Ausführen der Migration, s. Punkt 4)
 - [ ] M2: Upstash-Rate-Limit statt In-Memory-Platzhalter (blockiert durch 5)
 - [ ] M2: FR/IT/SL-Übersetzungen, Geocoding-Suche, echte Zubringer-Isochronen
+- [ ] M2: Import-Gebiet schrittweise auf alle Alpenländer erweitern
+      (Start: Bayerische Alpen + Tirol)
