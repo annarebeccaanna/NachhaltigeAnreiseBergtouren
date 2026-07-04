@@ -46,11 +46,9 @@ des Webdienstes. `LICENSE`-Datei liegt im Repo, `package.json` deklariert
       hinterlegt (2026-07-03)
 - [x] **Vercel:** Env-Variablen `SUPABASE_URL` + `SUPABASE_SECRET_KEY`
       hinterlegt, Production + Preview (2026-07-03)
-- [ ] **Schema-Migration ausführen:** Supabase Dashboard → SQL Editor →
-      Inhalt von `supabase/migrations/0001_touren.sql` einfügen → Run.
-      (Aktiviert PostGIS, legt Tabellen + RLS + RPC an. Danach den
-      Workflow „Tour-Import (OSM)" im GitHub-Actions-Tab einmal manuell
-      starten – oder auf den Montags-Cron warten.)
+- [x] **Schema-Migration ausgeführt** und erster Import gelaufen
+      (2026-07-04): 331 OSM-Touren (Bayerische Alpen + Tirol) in der
+      Datenbank; wöchentlicher Cron aktiv. → Punkt 4 komplett erledigt.
 
 Hinweise:
 - **Speicherbedarf-Schätzung (2026-07-03):** Touren-Metadaten ~50 MB +
@@ -117,8 +115,8 @@ Eigene Domain (z. B. bei INWX, Namecheap) und in Vercel verbinden;
       Ortsdaten unter `place`, `duration` in Minuten; Haltestellen-
       Ausdünnung für 16k+-Antworten ergänzt)
 - [x] M2: Supabase-Schema (Migration), Backend-Anbindung mit Fixture-
-      Fallback, OSM-Importer + wöchentliche GitHub Action (2026-07-03;
-      aktiv nach Ausführen der Migration, s. Punkt 4)
+      Fallback, OSM-Importer + wöchentliche GitHub Action (2026-07-03);
+      PR #1 gemergt, erster Import erfolgreich: 331 Touren (2026-07-04)
 - [ ] M2: Upstash-Rate-Limit statt In-Memory-Platzhalter (blockiert durch 5)
 - [ ] M2: FR/IT/SL-Übersetzungen, Geocoding-Suche, echte Zubringer-Isochronen
 - [ ] M2: Import-Gebiet schrittweise auf alle Alpenländer erweitern
