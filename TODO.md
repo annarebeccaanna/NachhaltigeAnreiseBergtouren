@@ -81,6 +81,32 @@ Env-Variablen automatisch).
   Preis individuell. Guter Zeitpunkt für die Anfrage: sobald der Prototyp mit
   Test-Daten läuft (Demo beilegen, Nachhaltigkeits-Argument nutzen).
 
+## 🚀 Launch-Checkliste (Weg in den Realbetrieb)
+
+**Von dir benötigt:**
+- [ ] **Impressums-Angaben liefern** (Name, ladungsfähige Anschrift oder
+      Postfach, E-Mail) – einziger echter Blocker; die Seiten sind mit
+      Platzhaltern `[…]` vorbereitet (`/impressum`, `/datenschutz`)
+- [ ] **Upstash-Konto** anlegen (TODO 5; Vercel → Marketplace → Upstash,
+      Free) – die Env-Variablen `UPSTASH_REDIS_REST_URL` +
+      `UPSTASH_REDIS_REST_TOKEN` verbindet die Integration automatisch;
+      das Rate-Limit im Code schaltet sich dann von selbst scharf
+- [ ] **Kostenbremsen aktivieren:** Vercel Spend Management,
+      Supabase-Usage-Alerts (je einmal durchklicken)
+- [ ] Optional: eigene Domain; Uptime-Check (z. B. UptimeRobot, gratis)
+- [ ] Optional: `photon.komoot.de` und `*.vercel.app` in der
+      Claude-Netzwerk-Freigabe ergänzen (Live-Tests der Suche/Produktion
+      aus der Entwicklungsumgebung)
+
+**Entwicklungsseite (im Launch-PR bzw. danach):**
+- [ ] Geocoding-Suche / freie Startpunktwahl (Photon)
+- [ ] Upstash-Rate-Limit-Code (mit In-Memory-Fallback)
+- [ ] OSM-Attribution sichtbar in der App (ODbL-Pflicht)
+- [ ] Impressum-/Datenschutz-Seiten (Platzhalter)
+- [ ] Content-Security-Policy vervollständigen (§ 11.6)
+- [ ] Import-Gebiet schrittweise auf alle Alpenländer erweitern
+- [ ] Transitous-Kontakt wegen Fair Use (TODO 7) – vor dem Bewerben
+
 ## Später (Meilenstein 3/4 und Livegang)
 
 ### 7. Transitous-Kontakt · kostenlos

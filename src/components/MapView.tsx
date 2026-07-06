@@ -5,6 +5,7 @@ import maplibregl, { Map as MlMap, GeoJSONSource, StyleSpecification } from 'map
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useTranslations } from 'next-intl';
 import type { ReachabilityResponse } from '@/lib/apiTypes';
+import type { StartPoint } from './App';
 
 /** OpenFreeMap: freie Vektor-Basemap ohne API-Key (Konzept § 7 / § 11.2). */
 const MAP_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
@@ -24,11 +25,14 @@ const COLORS = { area: '#2f855a', stop: '#4a5568', tour: '#dd6b20' };
 
 interface Props {
   data: ReachabilityResponse | null;
+  start: StartPoint;
 }
 
-export default function MapView({ data }: Props) {
+export default function MapView({ data, start }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
+  const markerRef = useRef<maplibregl.Marker | null>(null);
+  const startInitializedRef = useRef(false);
   const overlaysReadyRef = useRef(false);
   const dataRef = useRef<Props['data']>(null);
   const t = useTranslations('popup');
@@ -46,7 +50,12 @@ export default function MapView({ data }: Props) {
       style: MAP_STYLE,
       center: [11.7, 47.8],
       zoom: 7.5,
-      attributionControl: { compact: true },
+      attributionControl: {
+        compact: true,
+        // ODbL-Attribution der Tourdaten (Launch-Checkliste / § 3.3)
+        customAttribution:
+          'Tourdaten © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende (ODbL) · Fahrpläne via <a href="https://transitous.org">Transitous</a>',
+      },
     });
     mapRef.current = map;
     map.addControl(new maplibregl.NavigationControl(), 'top-right');
@@ -81,6 +90,8 @@ export default function MapView({ data }: Props) {
     return () => {
       map.remove();
       mapRef.current = null;
+      markerRef.current = null;
+      startInitializedRef.current = false;
       overlaysReadyRef.current = false;
     };
   }, []);
@@ -90,6 +101,24 @@ export default function MapView({ data }: Props) {
     const map = mapRef.current;
     if (map && overlaysReadyRef.current && data) applyData(map, data);
   }, [data]);
+
+  // Startpunkt-Marker pflegen; bei Wechsel dorthin fliegen (nicht beim
+  // ersten Rendern – die Karte startet bereits passend zentriert).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (!markerRef.current) {
+      markerRef.current = new maplibregl.Marker({ color: '#1d4ed8' })
+        .setLngLat([start.lon, start.lat])
+        .addTo(map);
+    } else {
+      markerRef.current.setLngLat([start.lon, start.lat]);
+    }
+    if (startInitializedRef.current) {
+      map.flyTo({ center: [start.lon, start.lat], zoom: Math.max(map.getZoom(), 8) });
+    }
+    startInitializedRef.current = true;
+  }, [start]);
 
   return <div ref={containerRef} className="map" />;
 }

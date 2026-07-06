@@ -5,8 +5,10 @@
   },
   "sidebar": {
     "start": "Startpunkt",
-    "startCity": "München Hbf",
-    "startHint": "Freie Startpunktwahl folgt in der nächsten Ausbaustufe.",
+    "searchPlaceholder": "Stadt oder Adresse suchen …",
+    "searchNoResults": "Keine Treffer im Alpenraum.",
+    "searchError": "Ortssuche derzeit nicht verfügbar.",
+    "osmAttribution": "Tourdaten © OpenStreetMap-Mitwirkende (ODbL)",
     "transitBudget": "Max. Anreise mit Bahn & Bus",
     "feederMode": "Zum Tourstart",
     "walk": "zu Fuß",
@@ -44,5 +46,9 @@
     "label": "Sprache",
     "de": "Deutsch",
     "en": "English"
+  },
+  "footer": {
+    "impressum": "Impressum",
+    "datenschutz": "Datenschutz"
   }
 }

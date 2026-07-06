@@ -1,3 +1,11 @@
+/** Ein Treffer von GET /api/geocode. */
+export interface GeocodeResult {
+  name: string;
+  detail: string;
+  lat: number;
+  lon: number;
+}
+
 /** Antwortform von GET /api/reachability (vom Frontend konsumiert). */
 export interface ReachabilityResponse {
   meta: {

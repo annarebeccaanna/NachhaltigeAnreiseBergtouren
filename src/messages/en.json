@@ -5,8 +5,10 @@
   },
   "sidebar": {
     "start": "Starting point",
-    "startCity": "Munich Central Station",
-    "startHint": "Free choice of starting point coming in the next stage.",
+    "searchPlaceholder": "Search city or address …",
+    "searchNoResults": "No matches in the Alpine region.",
+    "searchError": "Place search currently unavailable.",
+    "osmAttribution": "Tour data © OpenStreetMap contributors (ODbL)",
     "transitBudget": "Max. journey by train & bus",
     "feederMode": "Getting to the trailhead",
     "walk": "on foot",
@@ -44,5 +46,9 @@
     "label": "Language",
     "de": "Deutsch",
     "en": "English"
+  },
+  "footer": {
+    "impressum": "Legal notice",
+    "datenschutz": "Privacy"
   }
 }

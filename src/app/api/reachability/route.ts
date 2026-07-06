@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getReachableStops, defaultDeparture } from '@/lib/transitous';
 import { circlePolygon, unionPolygons, thinStopsToGrid, FEEDER_SPEED_KMH } from '@/lib/geo';
 import { findReachableTours } from '@/lib/toursRepo';
+import { rateLimited, clientIp } from '@/lib/rateLimit';
 import type { ReachableStop } from '@/lib/types';
 
 /**
@@ -26,30 +27,12 @@ const paramsSchema = z.object({
     .optional(),
 });
 
-// Einfaches In-Memory-Rate-Limit pro IP (Platzhalter; wird in M2 durch
-// @upstash/ratelimit ersetzt, § 11.3 – In-Memory ist auf Vercel nicht
-// instanzübergreifend und dient hier nur der lokalen Entwicklung).
-const RATE_LIMIT = { windowMs: 60_000, max: 10 };
-const rateBuckets = new Map<string, { windowStart: number; count: number }>();
-
-function rateLimited(ip: string): boolean {
-  const now = Date.now();
-  const bucket = rateBuckets.get(ip);
-  if (!bucket || now - bucket.windowStart > RATE_LIMIT.windowMs) {
-    rateBuckets.set(ip, { windowStart: now, count: 1 });
-    return false;
-  }
-  bucket.count += 1;
-  return bucket.count > RATE_LIMIT.max;
-}
-
 // Antwort-Cache: identische Parameter = identische Fläche (§ 11.3 Cache-first)
 const CACHE_TTL_MS = 60 * 60 * 1000;
 const responseCache = new Map<string, { expires: number; body: unknown }>();
 
 export async function GET(request: NextRequest) {
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'local';
-  if (rateLimited(ip)) {
+  if (await rateLimited('reachability', clientIp(request.headers), 10)) {
     return NextResponse.json(
       { error: 'Zu viele Anfragen, bitte kurz warten.' },
       { status: 429, headers: { 'Retry-After': '60' } }
