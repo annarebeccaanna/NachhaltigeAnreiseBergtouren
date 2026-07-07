@@ -8,13 +8,13 @@ on:
   workflow_dispatch:
     inputs:
       limit:
-        description: 'Max. Anzahl Relationen'
+        description: 'Max. Relationen pro Region'
         required: false
-        default: '400'
+        default: '1500'
       bbox:
-        description: 'Bounding Box (süd,west,nord,ost)'
+        description: 'Nur diese Bounding Box (süd,west,nord,ost) statt aller Regionen'
         required: false
-        default: '47.2,10.6,47.95,12.9'
+        default: ''
       dry_run:
         description: 'Nur transformieren, nicht schreiben'
         type: boolean
@@ -31,7 +31,7 @@ concurrency:
 jobs:
   import:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - name: Repository auschecken
         # actions/checkout v4.2.2, SHA-gepinnt (§ 11.5)
@@ -41,8 +41,10 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        # Ohne bbox-Eingabe (und beim Montags-Cron): alle Regionen des
+        # Alpenraums aus scripts/import-regions.json
         run: |
           node scripts/import-osm-tours.mjs \
-            --limit=${{ inputs.limit || '400' }} \
-            --bbox=${{ inputs.bbox || '47.2,10.6,47.95,12.9' }} \
+            --limit=${{ inputs.limit || '1500' }} \
+            ${{ inputs.bbox != '' && inputs.bbox != null && format('--bbox={0}', inputs.bbox) || '--regions' }} \
             ${{ inputs.dry_run == true && '--dry-run' || '' }}

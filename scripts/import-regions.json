@@ -1,0 +1,19 @@
+{
+  "hinweis": "Import-Regionen (Alpenkonventions-Perimeter, grob gekachelt). bbox = süd,west,nord,ost. Überlappungen sind unkritisch: Upsert dedupliziert über die OSM-Relations-ID.",
+  "regionen": [
+    { "name": "bayern-tirol", "bbox": "47.2,10.6,47.95,12.9" },
+    { "name": "allgaeu-vorarlberg-alpstein", "bbox": "47.1,9.0,47.9,10.6" },
+    { "name": "graubuenden-glarus", "bbox": "46.3,9.0,47.2,10.6" },
+    { "name": "berner-oberland-zentralschweiz", "bbox": "46.3,7.5,47.1,9.0" },
+    { "name": "wallis-montblanc-aosta", "bbox": "45.6,6.7,46.5,8.2" },
+    { "name": "savoyen-vercors", "bbox": "44.9,5.4,46.5,6.9" },
+    { "name": "suedfranzoesische-alpen", "bbox": "43.6,5.4,45.0,7.6" },
+    { "name": "piemont-seealpen", "bbox": "44.0,6.7,45.6,8.2" },
+    { "name": "norditalien-tessin-bergamasker", "bbox": "45.7,8.2,46.4,10.4" },
+    { "name": "suedtirol-dolomiten-ortler", "bbox": "46.2,10.4,47.2,12.5" },
+    { "name": "salzburg-berchtesgaden-oberoesterreich", "bbox": "47.2,12.9,48.05,14.5" },
+    { "name": "kaernten-osttirol-friaul", "bbox": "46.2,12.5,47.2,14.2" },
+    { "name": "steiermark-niederoesterreich", "bbox": "47.0,14.2,47.95,16.2" },
+    { "name": "slowenien-julische-alpen", "bbox": "45.8,13.3,46.7,16.0" }
+  ]
+}
