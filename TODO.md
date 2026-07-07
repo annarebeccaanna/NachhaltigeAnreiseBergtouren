@@ -87,10 +87,10 @@ Env-Variablen automatisch).
 - [ ] **Impressums-Angaben liefern** (Name, ladungsfähige Anschrift oder
       Postfach, E-Mail) – einziger echter Blocker; die Seiten sind mit
       Platzhaltern `[…]` vorbereitet (`/impressum`, `/datenschutz`)
-- [ ] **Upstash-Konto** anlegen (TODO 5; Vercel → Marketplace → Upstash,
-      Free) – die Env-Variablen `UPSTASH_REDIS_REST_URL` +
-      `UPSTASH_REDIS_REST_TOKEN` verbindet die Integration automatisch;
-      das Rate-Limit im Code schaltet sich dann von selbst scharf
+- [x] **Upstash-Konto** angelegt und mit dem Projekt verbunden
+      (2026-07-07). **Noch offen:** Env-Variablen-Namen prüfen (müssen
+      `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` heißen) und
+      einmal redeployen, damit das Rate-Limit sie aufnimmt
 - [ ] **Kostenbremsen aktivieren:** Vercel Spend Management,
       Supabase-Usage-Alerts (je einmal durchklicken)
 - [ ] Optional: eigene Domain; Uptime-Check (z. B. UptimeRobot, gratis)
