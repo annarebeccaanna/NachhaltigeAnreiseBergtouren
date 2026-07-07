@@ -2,19 +2,31 @@
 
 import { useTranslations } from 'next-intl';
 import type { ReachabilityResponse } from '@/lib/apiTypes';
-import type { Settings } from './App';
+import type { Settings, StartPoint } from './App';
 import LanguageSwitcher from './LanguageSwitcher';
+import StartSearch from './StartSearch';
 
 interface Props {
   settings: Settings;
   onChange: (s: Settings) => void;
   onApply: () => void;
+  start: StartPoint;
+  onStartChange: (start: StartPoint) => void;
   meta: ReachabilityResponse['meta'] | null;
   loading: boolean;
   error: boolean;
 }
 
-export default function Sidebar({ settings, onChange, onApply, meta, loading, error }: Props) {
+export default function Sidebar({
+  settings,
+  onChange,
+  onApply,
+  start,
+  onStartChange,
+  meta,
+  loading,
+  error,
+}: Props) {
   const t = useTranslations();
 
   return (
@@ -24,13 +36,7 @@ export default function Sidebar({ settings, onChange, onApply, meta, loading, er
         <p className="subtitle">{t('app.subtitle')}</p>
       </header>
 
-      <section className="control">
-        <label htmlFor="start">{t('sidebar.start')}</label>
-        <select id="start" disabled>
-          <option>{t('sidebar.startCity')}</option>
-        </select>
-        <p className="hint">{t('sidebar.startHint')}</p>
-      </section>
+      <StartSearch start={start} onSelect={onStartChange} />
 
       <section className="control">
         <label htmlFor="transit">
@@ -108,6 +114,12 @@ export default function Sidebar({ settings, onChange, onApply, meta, loading, er
       </section>
 
       <footer>
+        <p className="attribution">{t('sidebar.osmAttribution')}</p>
+        <p className="legal-links">
+          <a href="/impressum">{t('footer.impressum')}</a>
+          {' · '}
+          <a href="/datenschutz">{t('footer.datenschutz')}</a>
+        </p>
         <LanguageSwitcher />
       </footer>
     </aside>
