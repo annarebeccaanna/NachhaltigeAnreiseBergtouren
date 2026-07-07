@@ -107,7 +107,10 @@ Env-Variablen automatisch).
 - [x] OSM-Attribution sichtbar in Karte + Footer (PR #2)
 - [x] Impressum-/Datenschutz-Seiten mit Platzhaltern (PR #2)
 - [x] Content-Security-Policy vollständig (PR #2)
-- [ ] Import-Gebiet schrittweise auf alle Alpenländer erweitern
+- [x] Import-Gebiet auf den gesamten Alpenraum erweitert (14 Regionen,
+      PR #3, gemergt 2026-07-07). **Noch offen:** Import-Workflow einmal
+      manuell starten (Actions → „Tour-Import (OSM)" → Run workflow,
+      Felder leer lassen) – oder auf den Montags-Cron warten
 - [ ] Transitous-Kontakt wegen Fair Use (TODO 7) – vor dem Bewerben
 
 ## Später (Meilenstein 3/4 und Livegang)
