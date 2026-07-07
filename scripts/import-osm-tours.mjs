@@ -8,9 +8,12 @@
  *
  * Aufruf:
  *   node scripts/import-osm-tours.mjs [--dry-run] [--limit=400] [--bbox=s,w,n,e]
+ *   node scripts/import-osm-tours.mjs --regions [--limit=1500]   # ganzer Alpenraum
  *
- * --dry-run schreibt nur .import-preview.json (kein DB-Zugriff nötig) –
- * so ist der Overpass-/Transformationsteil ohne Secrets testbar.
+ * --regions importiert alle Kacheln aus scripts/import-regions.json
+ * nacheinander (mit Pause, Overpass-Fairness). --dry-run schreibt nur
+ * .import-preview.json (kein DB-Zugriff nötig) – so ist der Overpass-/
+ * Transformationsteil ohne Secrets testbar.
  */
 
 const OVERPASS_URL = process.env.OVERPASS_URL ?? 'https://overpass-api.de/api/interpreter';
@@ -37,8 +40,12 @@ const args = new Map(
   })
 );
 const dryRun = args.has('--dry-run');
-const limit = Number(args.get('--limit') ?? DEFAULT_LIMIT);
+const useRegions = args.has('--regions');
+const limit = Number(args.get('--limit') ?? (useRegions ? 1500 : DEFAULT_LIMIT));
 const bbox = args.get('--bbox') ?? DEFAULT_BBOX;
+
+/** Pause zwischen Regions-Abfragen (Overpass-Fairness). */
+const REGION_PAUSE_MS = 8000;
 
 main().catch((err) => {
   console.error('Import fehlgeschlagen:', err);
@@ -50,20 +57,38 @@ async function main() {
     throw new Error('SUPABASE_URL/SUPABASE_SECRET_KEY fehlen (oder --dry-run nutzen).');
   }
 
-  console.log(`Overpass-Abfrage: route=hiking, bbox=${bbox}, limit=${limit}`);
-  const relations = await fetchOverpass();
-  console.log(`Relationen erhalten: ${relations.length}`);
+  const regions = useRegions
+    ? (await import('./import-regions.json', { with: { type: 'json' } })).default.regionen
+    : [{ name: 'custom', bbox }];
 
-  const tours = [];
+  // Über OSM-Relations-ID dedupliziert – Regions-Kacheln überlappen bewusst.
+  const toursById = new Map();
   const skipped = { keineGeometrie: 0, zuKurzOderLang: 0 };
-  for (const rel of relations) {
-    const tour = transformRelation(rel);
-    if (tour === 'no-geometry') skipped.keineGeometrie += 1;
-    else if (tour === 'bad-length') skipped.zuKurzOderLang += 1;
-    else tours.push(tour);
+
+  for (const [i, region] of regions.entries()) {
+    if (i > 0) await new Promise((r) => setTimeout(r, REGION_PAUSE_MS));
+    console.log(
+      `[${i + 1}/${regions.length}] Overpass: route=hiking, ` +
+        `${region.name} (${region.bbox}), limit=${limit}`
+    );
+    const relations = await fetchOverpass(region.bbox);
+    let added = 0;
+    for (const rel of relations) {
+      if (toursById.has(`osm-${rel.id}`)) continue;
+      const tour = transformRelation(rel);
+      if (tour === 'no-geometry') skipped.keineGeometrie += 1;
+      else if (tour === 'bad-length') skipped.zuKurzOderLang += 1;
+      else {
+        toursById.set(tour.id, tour);
+        added += 1;
+      }
+    }
+    console.log(`  → ${relations.length} Relationen, ${added} neue Touren`);
   }
+
+  const tours = [...toursById.values()];
   console.log(
-    `Transformiert: ${tours.length} Touren ` +
+    `Transformiert gesamt: ${tours.length} Touren ` +
       `(übersprungen: ${skipped.keineGeometrie} ohne Geometrie, ` +
       `${skipped.zuKurzOderLang} außerhalb ${MIN_KM}–${MAX_KM} km)`
   );
@@ -79,7 +104,9 @@ async function main() {
     return;
   }
 
-  const laufId = await startImportLauf();
+  const laufId = await startImportLauf(
+    useRegions ? `osm-overpass (${regions.length} Regionen, Alpenraum)` : `osm-overpass bbox=${bbox}`
+  );
   try {
     await upsertTours(tours);
     await finishImportLauf(laufId, { status: 'ok', touren_anzahl: tours.length });
@@ -93,9 +120,9 @@ async function main() {
   }
 }
 
-async function fetchOverpass() {
+async function fetchOverpass(bboxParam) {
   const query = `[out:json][timeout:180];
-relation["route"="hiking"]["name"](${bbox});
+relation["route"="hiking"]["name"](${bboxParam});
 out geom ${limit};`;
 
   // Die öffentliche Overpass-Instanz ist regelmäßig ausgelastet (429/504);
@@ -250,11 +277,11 @@ async function supabaseFetch(path, options) {
   return res;
 }
 
-async function startImportLauf() {
+async function startImportLauf(quelle) {
   const res = await supabaseFetch('/rest/v1/import_laeufe', {
     method: 'POST',
     headers: { Prefer: 'return=representation' },
-    body: JSON.stringify({ quelle: `osm-overpass bbox=${bbox}` }),
+    body: JSON.stringify({ quelle }),
   });
   const [row] = await res.json();
   return row.id;
