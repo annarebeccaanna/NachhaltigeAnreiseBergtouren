@@ -99,11 +99,14 @@ Env-Variablen automatisch).
       aus der Entwicklungsumgebung)
 
 **Entwicklungsseite (im Launch-PR bzw. danach):**
-- [ ] Geocoding-Suche / freie Startpunktwahl (Photon)
-- [ ] Upstash-Rate-Limit-Code (mit In-Memory-Fallback)
-- [ ] OSM-Attribution sichtbar in der App (ODbL-Pflicht)
-- [ ] Impressum-/Datenschutz-Seiten (Platzhalter)
-- [ ] Content-Security-Policy vervollständigen (§ 11.6)
+- [x] Geocoding-Suche / freie Startpunktwahl (Photon) – PR #2, gemergt
+      2026-07-06. **Sichtcheck auf Produktion noch offen** (Ortssuche +
+      Karte einmal ausprobieren; aus der Dev-Umgebung nicht testbar)
+- [x] Upstash-Rate-Limit-Code mit In-Memory-Fallback (PR #2; scharf,
+      sobald Upstash-Integration angelegt ist)
+- [x] OSM-Attribution sichtbar in Karte + Footer (PR #2)
+- [x] Impressum-/Datenschutz-Seiten mit Platzhaltern (PR #2)
+- [x] Content-Security-Policy vollständig (PR #2)
 - [ ] Import-Gebiet schrittweise auf alle Alpenländer erweitern
 - [ ] Transitous-Kontakt wegen Fair Use (TODO 7) – vor dem Bewerben
 
