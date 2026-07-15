@@ -87,10 +87,10 @@ Env-Variablen automatisch).
 - [ ] **Impressums-Angaben liefern** (Name, ladungsfähige Anschrift oder
       Postfach, E-Mail) – einziger echter Blocker; die Seiten sind mit
       Platzhaltern `[…]` vorbereitet (`/impressum`, `/datenschutz`)
-- [ ] **Upstash-Konto** anlegen (TODO 5; Vercel → Marketplace → Upstash,
-      Free) – die Env-Variablen `UPSTASH_REDIS_REST_URL` +
-      `UPSTASH_REDIS_REST_TOKEN` verbindet die Integration automatisch;
-      das Rate-Limit im Code schaltet sich dann von selbst scharf
+- [x] **Upstash-Konto** angelegt und mit dem Projekt verbunden
+      (2026-07-07). **Noch offen:** Env-Variablen-Namen prüfen (müssen
+      `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` heißen) und
+      einmal redeployen, damit das Rate-Limit sie aufnimmt
 - [ ] **Kostenbremsen aktivieren:** Vercel Spend Management,
       Supabase-Usage-Alerts (je einmal durchklicken)
 - [ ] Optional: eigene Domain; Uptime-Check (z. B. UptimeRobot, gratis)
@@ -107,7 +107,10 @@ Env-Variablen automatisch).
 - [x] OSM-Attribution sichtbar in Karte + Footer (PR #2)
 - [x] Impressum-/Datenschutz-Seiten mit Platzhaltern (PR #2)
 - [x] Content-Security-Policy vollständig (PR #2)
-- [ ] Import-Gebiet schrittweise auf alle Alpenländer erweitern
+- [x] Import-Gebiet auf den gesamten Alpenraum erweitert (14 Regionen,
+      PR #3, gemergt 2026-07-07). **Noch offen:** Import-Workflow einmal
+      manuell starten (Actions → „Tour-Import (OSM)" → Run workflow,
+      Felder leer lassen) – oder auf den Montags-Cron warten
 - [ ] Transitous-Kontakt wegen Fair Use (TODO 7) – vor dem Bewerben
 
 ## Später (Meilenstein 3/4 und Livegang)

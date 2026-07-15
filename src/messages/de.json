@@ -40,7 +40,18 @@
     "hours": "{hours} h {minutes} min",
     "difficulty_leicht": "leicht",
     "difficulty_mittel": "mittel",
-    "difficulty_schwer": "schwer"
+    "difficulty_schwer": "schwer",
+    "detailsLink": "Tourdetails",
+    "connectionLink": "ÖV-Verbindung"
+  },
+  "tour": {
+    "back": "zurück zur Karte",
+    "connection": "ÖV-Verbindung zum Tourstart suchen",
+    "connectionHint": "Tipp: Über einen Tour-Pin auf der Karte geöffnet, ist dein Startpunkt in der Verbindungssuche bereits eingetragen.",
+    "source": "Quelle",
+    "osmLink": "auf OpenStreetMap ansehen",
+    "sampleNote": "Beispieldaten – dient nur der Demonstration.",
+    "disclaimer": "Alle Angaben sind automatisch berechnete Näherungswerte ohne Gewähr. Bitte Verbindung, Wegverhältnisse und alpine Gefahren eigenverantwortlich prüfen."
   },
   "lang": {
     "label": "Sprache",

@@ -1,6 +1,6 @@
 import type { ReachableStop, Tour } from './types';
 import { haversineKm, thinStopsToGrid } from './geo';
-import { supabaseConfigured, supabaseRpc, supabaseCount } from './supabaseRest';
+import { supabaseConfigured, supabaseRpc, supabaseCount, supabaseSelect } from './supabaseRest';
 import toursData from '@/data/tours.json';
 
 export interface MatchedTour {
@@ -90,6 +90,78 @@ async function findViaSupabase(
   }));
 
   return matchInMemory(tours, stops, radiusKm);
+}
+
+export interface TourDetail {
+  tour: Tour;
+  geometrie: GeoJSON.LineString | null;
+  osmRelation: number | null;
+  source: TourSource;
+}
+
+/**
+ * Einzelne Tour für die Detailseite. Start-/Endpunkt werden aus der
+ * gespeicherten Linien-Geometrie abgeleitet (erster/letzter Punkt – die
+ * Vereinfachung beim Import erhält die Endpunkte), damit keine
+ * Geography-Spalten über REST gelesen werden müssen.
+ */
+export async function getTourById(id: string): Promise<TourDetail | null> {
+  if (supabaseConfigured() && /^[a-z0-9-]{1,60}$/.test(id)) {
+    interface Row {
+      id: string;
+      name: string;
+      quelle: string;
+      lizenz: string;
+      ist_rundtour: boolean;
+      distanz_km: number;
+      aufstieg_hm: number | null;
+      abstieg_hm: number | null;
+      dauer_min: number;
+      schwierigkeit: Tour['schwierigkeit'] | null;
+      beschreibung: string;
+      geometrie: GeoJSON.LineString | null;
+      metadata: { osm_relation?: number } | null;
+    }
+    try {
+      const rows = await supabaseSelect<Row[]>(
+        `touren?id=eq.${encodeURIComponent(id)}&limit=1&select=` +
+          'id,name,quelle,lizenz,ist_rundtour,distanz_km,aufstieg_hm,' +
+          'abstieg_hm,dauer_min,schwierigkeit,beschreibung,geometrie,metadata'
+      );
+      const r = rows[0];
+      const coords = r?.geometrie?.coordinates ?? [];
+      if (r && coords.length >= 2) {
+        const [startLon, startLat] = coords[0];
+        const [endLon, endLat] = coords[coords.length - 1];
+        return {
+          tour: {
+            id: r.id,
+            name: r.name,
+            quelle: r.quelle,
+            lizenz: r.lizenz,
+            start_punkt: { lat: startLat, lon: startLon },
+            end_punkt: { lat: endLat, lon: endLon },
+            ist_rundtour: r.ist_rundtour,
+            distanz_km: Number(r.distanz_km),
+            aufstieg_hm: r.aufstieg_hm ?? 0,
+            abstieg_hm: r.abstieg_hm ?? 0,
+            dauer_min: r.dauer_min,
+            schwierigkeit: r.schwierigkeit ?? 'mittel',
+            beschreibung: r.beschreibung,
+          },
+          geometrie: r.geometrie,
+          osmRelation: r.metadata?.osm_relation ?? null,
+          source: 'supabase',
+        };
+      }
+    } catch (err) {
+      console.error('Supabase-Detailabfrage fehlgeschlagen, prüfe Beispieldaten:', err);
+    }
+  }
+  const fixture = fixtureTours.find((t) => t.id === id);
+  return fixture
+    ? { tour: fixture, geometrie: null, osmRelation: null, source: 'beispieldaten' }
+    : null;
 }
 
 function matchInMemory(
