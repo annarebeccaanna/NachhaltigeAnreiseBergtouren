@@ -25,6 +25,18 @@ export async function supabaseRpc<T>(fn: string, args: Record<string, unknown>):
   return (await res.json()) as T;
 }
 
+/** Lesende Abfrage über PostgREST (Pfad inkl. Query-String, ohne /rest/v1/). */
+export async function supabaseSelect<T>(pathWithQuery: string): Promise<T> {
+  const res = await fetch(`${url}/rest/v1/${pathWithQuery}`, {
+    headers: { apikey: key! },
+    next: { revalidate: 3600 },
+  });
+  if (!res.ok) {
+    throw new Error(`Supabase select antwortete ${res.status}`);
+  }
+  return (await res.json()) as T;
+}
+
 /** Anzahl Zeilen einer Tabelle (HEAD mit count=exact, ohne Datentransfer). */
 export async function supabaseCount(table: string): Promise<number> {
   const res = await fetch(`${url}/rest/v1/${table}?select=id&limit=1`, {

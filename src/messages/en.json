@@ -40,7 +40,18 @@
     "hours": "{hours} h {minutes} min",
     "difficulty_leicht": "easy",
     "difficulty_mittel": "moderate",
-    "difficulty_schwer": "hard"
+    "difficulty_schwer": "hard",
+    "detailsLink": "Tour details",
+    "connectionLink": "Transit connection"
+  },
+  "tour": {
+    "back": "back to the map",
+    "connection": "Find transit connection to the trailhead",
+    "connectionHint": "Tip: When opened from a tour pin on the map, your starting point is already filled in.",
+    "source": "Source",
+    "osmLink": "view on OpenStreetMap",
+    "sampleNote": "Sample data – for demonstration only.",
+    "disclaimer": "All figures are automatically calculated approximations without guarantee. Please verify connections, trail conditions and alpine hazards yourself."
   },
   "lang": {
     "label": "Language",

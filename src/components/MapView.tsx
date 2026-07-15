@@ -5,6 +5,7 @@ import maplibregl, { Map as MlMap, GeoJSONSource, StyleSpecification } from 'map
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useTranslations } from 'next-intl';
 import type { ReachabilityResponse } from '@/lib/apiTypes';
+import { transitConnectionUrl } from '@/lib/links';
 import type { StartPoint } from './App';
 
 /** OpenFreeMap: freie Vektor-Basemap ohne API-Key (Konzept § 7 / § 11.2). */
@@ -37,10 +38,15 @@ export default function MapView({ data, start }: Props) {
   const dataRef = useRef<Props['data']>(null);
   const t = useTranslations('popup');
   const tRef = useRef(t);
+  const startRef = useRef(start);
 
   useEffect(() => {
     tRef.current = t;
   }, [t]);
+
+  useEffect(() => {
+    startRef.current = start;
+  }, [start]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -79,9 +85,16 @@ export default function MapView({ data, start }: Props) {
     map.on('click', 'tours-layer', (e) => {
       const feature = e.features?.[0];
       if (!feature) return;
+      const [tourLon, tourLat] = (feature.geometry as GeoJSON.Point).coordinates;
       new maplibregl.Popup({ offset: 10, maxWidth: '320px' })
         .setLngLat(e.lngLat)
-        .setDOMContent(buildPopup(feature.properties, tRef.current))
+        .setDOMContent(
+          buildPopup(feature.properties, tRef.current, {
+            start: startRef.current,
+            tourLat,
+            tourLon,
+          })
+        )
         .addTo(map);
     });
     map.on('mouseenter', 'tours-layer', () => (map.getCanvas().style.cursor = 'pointer'));
@@ -171,9 +184,19 @@ function applyData(map: MlMap, data: ReachabilityResponse) {
 
 type PopupT = ReturnType<typeof useTranslations<'popup'>>;
 
+interface PopupContext {
+  start: StartPoint;
+  tourLat: number;
+  tourLon: number;
+}
+
 /** Popup rein über DOM-API und textContent – Tourdaten gelten als untrusted,
  *  es wird nie HTML aus Daten interpretiert (Konzept § 11.4). */
-function buildPopup(props: Record<string, unknown>, t: PopupT): HTMLElement {
+function buildPopup(
+  props: Record<string, unknown>,
+  t: PopupT,
+  ctx: PopupContext
+): HTMLElement {
   const root = document.createElement('div');
   root.className = 'tour-popup';
 
@@ -213,6 +236,35 @@ function buildPopup(props: Record<string, unknown>, t: PopupT): HTMLElement {
   desc.className = 'tour-desc';
   desc.textContent = String(props.beschreibung ?? '');
   root.appendChild(desc);
+
+  // Links: Detailseite (mit User-Start als ?von= für den Verbindungs-Link
+  // dort) und direkte ÖV-Verbindungssuche. IDs stammen aus eigenen
+  // Importern (^[a-z0-9-]+$), encodeURIComponent sichert zusätzlich ab.
+  const links = document.createElement('p');
+  links.className = 'tour-links';
+
+  const detailLink = document.createElement('a');
+  detailLink.href =
+    `/touren/${encodeURIComponent(String(props.id ?? ''))}` +
+    `?von=${ctx.start.lat.toFixed(5)},${ctx.start.lon.toFixed(5)}`;
+  detailLink.target = '_blank';
+  detailLink.rel = 'noopener';
+  detailLink.textContent = `${t('detailsLink')} ↗`;
+  links.appendChild(detailLink);
+
+  const connectionLink = document.createElement('a');
+  connectionLink.href = transitConnectionUrl({
+    fromLat: ctx.start.lat,
+    fromLon: ctx.start.lon,
+    toLat: ctx.tourLat,
+    toLon: ctx.tourLon,
+  });
+  connectionLink.target = '_blank';
+  connectionLink.rel = 'noopener noreferrer';
+  connectionLink.textContent = `🚆 ${t('connectionLink')} ↗`;
+  links.appendChild(connectionLink);
+
+  root.appendChild(links);
 
   return root;
 }
