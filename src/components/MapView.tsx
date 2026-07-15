@@ -200,8 +200,18 @@ function buildPopup(
   const root = document.createElement('div');
   root.className = 'tour-popup';
 
+  const detailHref =
+    `/touren/${encodeURIComponent(String(props.id ?? ''))}` +
+    `?von=${ctx.start.lat.toFixed(5)},${ctx.start.lon.toFixed(5)}`;
+
+  // Titel = Link zur Tourseite (auffälligster Einstieg, besonders mobil)
   const title = document.createElement('h3');
-  title.textContent = String(props.name ?? '');
+  const titleLink = document.createElement('a');
+  titleLink.href = detailHref;
+  titleLink.target = '_blank';
+  titleLink.rel = 'noopener';
+  titleLink.textContent = String(props.name ?? '');
+  title.appendChild(titleLink);
   root.appendChild(title);
 
   const type = document.createElement('p');
@@ -244,9 +254,7 @@ function buildPopup(
   links.className = 'tour-links';
 
   const detailLink = document.createElement('a');
-  detailLink.href =
-    `/touren/${encodeURIComponent(String(props.id ?? ''))}` +
-    `?von=${ctx.start.lat.toFixed(5)},${ctx.start.lon.toFixed(5)}`;
+  detailLink.href = detailHref;
   detailLink.target = '_blank';
   detailLink.rel = 'noopener';
   detailLink.textContent = `${t('detailsLink')} ↗`;
